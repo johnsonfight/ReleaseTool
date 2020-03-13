@@ -1,0 +1,954 @@
+%% =============================================================================
+%%
+%% Copyright 2013-2018, Dell Inc.  All rights reserved.
+%%
+%% Comments on how this file is used, structured, and processed are located
+%% at the end of the file, after the data. Search for: MAIN_DOCUMENTATION
+%%
+%% =============================================================================
+
+
+
+%% -----------------------------------------------------------------------------
+%% Define several mandatory pieces of information:
+%% -----------------------------------------------------------------------------
+
+MANDATORY:
+
+.ifdefined BUILDING_RECOVERY_BIOS
+
+    BIOS_FLASH_SIZE  = 0x00C10000     %% Recovery BIOS definitions
+    ME_FLASH_SIZE    = 0x003EF000     %% Recovery BIOS definitions
+    PTU_FLASH_SIZE   = 0x00000000     %% Recovery BIOS definitions
+    BIOS2_FLASH_SIZE = 0x00000000     %% Recovery BIOS definitions
+    SP2_FLASH_SIZE   = 0x00000000     %% Recovery BIOS definitions
+    DESC_FLASH_SIZE  = 0x0001000      %% Recovery BIOS definitions
+    FLASH_PART_SIZE  = 0x01000000     %% Recovery BIOS definitions
+    ACM_ALIGNMENT    = 0x00040000     %% Recovery BIOS definitions
+    FLASH_BLOCK_SIZE = 0x00010000     %% Recovery BIOS definitions
+    FLASHBASE        = 0x00000000     %% Recovery BIOS definitions
+
+.else
+
+                       %% The number of bytes in the flash part that are devoted
+                       %% to the BIOS area. The sum of the sizes of the regions
+                       %% listed in the SIZES: section below must sum to this
+                       %% value.
+    BIOS_FLASH_SIZE  = 0x01BF0000
+
+
+    %% =========================================================================
+    %% The next several definitions are sizes of flash regions that are not
+    %% owned by the BIOS; they are owned by Intel to store various code and
+    %% data like the ME code, the flash descriptors, etc.
+                       %% The size in bytes of the ME area.
+    ME_FLASH_SIZE    = 0x0040F000   %% 4MB
+
+                       %% The size in bytes of the PTU area.
+                       %% Currently disabled
+    PTU_FLASH_SIZE   = 0x00000000   %% 0KB
+
+                       %% The size of another CPU's BIOS area.
+    BIOS2_FLASH_SIZE = 0x00000000
+
+                       %% The size of the other ME configs based on different XMLs.
+    SP2_FLASH_SIZE   = 0x00000000
+
+                       %% The size in bytes of the flash descriptor area.
+    DESC_FLASH_SIZE  = 0x0001000    %% 4KB
+    %% End of non-BIOS region sizes
+    %% =========================================================================
+
+
+                       %% The size in bytes of the flash part. This must equal
+                       %% the sum of BIOS_FLASH_SIZE and all the non-BIOS region
+                       %% sizes in the block above.
+    FLASH_PART_SIZE  = 0x02000000   %%  32 MB
+
+
+    %% =========================================================================
+    %% The RECOVERY_PART_SIZE definition is only required if the platform
+    %% supports a recovery BIOS that is flashed into a separate flash ROM, and
+    %% if the DellAutoSource makefile calls for a recovery BIOS binary file to
+    %% be created (using the /rf=<filename> option).
+    %% =========================================================================
+    RECOVERY_PART_SIZE = 0x01000000   %%  16 MB
+
+
+                       %% The size and physical address alignment of the BIOS
+                       %% and INIT ACM areas.  This value is chipset-specific.
+    ACM_ALIGNMENT    = 0x00040000   %%  256 KB
+
+
+                       %% The size in bytes of a single flash block.
+    FLASH_BLOCK_SIZE = 0x00010000   %%  64 KB
+
+
+                       %% The base address in the flash where the flash region
+                       %% having the lowest address begins.
+    FLASHBASE        = 0x00000000
+
+.endif
+
+SECTION_END:
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                                                            %%
+%% DO NOT MOVE, RENAME, OR ADD A REGION IN THE "SIZES:" SECTION UNLESS YOU    %%
+%% HAVE READ THE HELP IN THIS FILE AND UNDERSTAND THE OTHER REQUIRED ACTIONS. %%
+%% IF YOU ONLY CHANGE THIS FILE, YOU MAY BREAK THE BUILD!!!!!!  SEARCH FOR    %%
+%% ONE OR MORE OF THESE TOPICS:                                               %%
+%%                                                                            %%
+%%       o  MOVING_REGIONS                                                    %%
+%%       o  RENAMING_REGIONS                                                  %%
+%%       o  ADDING_REGIONS                                                    %%
+%%                                                                            %%
+%% RESIZING A REGION IS RELATIVELY SIMPLE AND INVOLVES CHANGES TO THIS FILE   %%
+%% ALONE. NONETHELESS, SOME INSTRUCTION IS PROVIDED FOR THIS--SEARCH FOR      %%
+%%                                                                            %%
+%%       o  RESIZING_REGIONS                                                  %%
+%%                                                                            %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% -----------------------------------------------------------------------------
+%% Define the names, sizes AND ORDER of the flash regions.
+%% -----------------------------------------------------------------------------
+
+SIZES:
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%                                                                        %%
+    %% CAUTION: THE REGION AT THE LOWEST FLASH ADDRESS MUST APPEAR FIRST! THE %%
+    %%          REMAINING REGIONS MUST BE IN ORDER FROM LOWEST TO HIGHEST!    %%
+    %%                                                                        %%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% ================================================================
+%% Normal BIOS flash regions and sizes:
+%% ================================================================
+
+    %% MAIN_BIOS code must remain in the upper half of the 32 MB region in
+    %% order to run correctly
+.ifnotdefined BUILDING_RECOVERY_BIOS
+    FREE3 = 0x00E90000
+.endif
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %% A write-protect region defines an area of the flash that is to be      %%
+    %% write-protected by the BIOS.  A write-protect region is made up of one %%
+    %% or more named regions. You can define as many write-protect regions as %%
+    %% are needed, but there are only so many chipset registers available to  %%
+    %% use to write-protect them...                                           %%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+WriteProtectStart:
+                %% Image Information Block (IIB)
+                %% This block contains information about the BIOS image.  This
+                %% information will be used by iDRAC to do Root-Of-Trust,
+                %% Live BIOS Scan, BIOS Update and BIOS recovery, and possibly
+                %% other things ...
+    IIB_DATA = 0x00000000
+
+                %% DXE, SMI, Runtime, etc. code.
+                %% !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                %% !! DO NOT MOVE THIS REGION! IF YOU DO, THE MEMORY MAP WILL !!
+                %% !! GET MESSED UP AND THE BIOS WILL PROBABLY RSOD IN BDS IN !!
+                %% !! FUNCTION SetBiosFlashMemorySpaceAttributes().           !!
+                %% !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    MAIN_BIOS  = 0x00570000
+
+WriteProtectEnd:
+
+                 %% This region is open for use. Reduce its size by the amount
+                 %% that the previous code region needs to increase. That will
+                 %% keep the data regions above here from moving.
+.ifnotdefined BUILDING_RECOVERY_BIOS
+    FREE1      = 0x00020000
+.endif
+
+                 %% The WHEA error log is located here.
+    WHEA_ELOG  = 0x00010000
+
+                 %% Fonts for setup/POST.
+    FONTS      = 0x00140000
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %% A pseudo-region defines a flash region that is composed of one or more %%
+    %% named regions.  You can define as many pseudo-regions as are needed    %%
+    %% or are helpful.  Pseudo-regions can overlap or encompass other pseudo- %%
+    %% regions if that is needed.                                             %%
+    %%                                                                        %%
+    %% The UEFI_VARIABLES pseudo-region is used by the data wipe protocol to  %%
+    %% erase the entire area of the flash where we store UEFI variables.      %%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PseudoRegionStart: UEFI_VARIABLES
+
+                 %% The next 4 values are subregions that together make up the
+                 %% NV storage region of the flash. This is where we keep our
+                 %% UEFI variables.
+                 %% The names of these subregions are used in many other files,
+                 %% so do not change them unless you are prepared to make the
+                 %% corresponding changes in several other files...
+                 %% NOTE: the following equation must hold:
+                 %%      FTW_SPARE = NV_FVHDR + EVENT_LOG + FTW
+.ifnotdefined BUILDING_RECOVERY_BIOS
+    NV_FVHDR   = 0x0004C000
+.else
+    NV_FVHDR   = 0x0001C000
+.endif
+    EVENT_LOG  = 0x00002000
+    FTW        = 0x00002000
+.ifnotdefined BUILDING_RECOVERY_BIOS
+    FTW_SPARE  = 0x00050000
+.else
+    FTW_SPARE  = 0x00020000
+.endif
+
+PseudoRegionEnd: UEFI_VARIABLES
+
+                 %% This region is for private BIOS NVRAM Attribute storage.
+.ifnotdefined BUILDING_RECOVERY_BIOS
+    BIOS_NVRAM        = 0x00020000
+.else
+    BIOS_NVRAM        = 0x00010000
+.endif
+
+                 %% This region is for backup of specific BIOS NVRAM Attributes.
+.ifnotdefined BUILDING_RECOVERY_BIOS
+    BIOS_NVRAM_BACKUP = 0x00020000
+.else
+    BIOS_NVRAM_BACKUP = 0x00010000
+.endif
+
+                 %% This region is for factory use.
+    ACI        = 0x00010000
+
+                 %% This region is for logging IPMI command information.
+    IPMI_LOG   = 0x00010000
+
+                 %% This region is for saving MRC data for support of fast boot.
+    MRC_NVRAM  = 0x00010000
+
+                 %% This region is for storing previous boot memory config.
+    PREV_MEMCONFIG = 0x00010000
+
+                 %% OEM ID data (if any) is stored here.
+.ifnotdefined BUILDING_RECOVERY_BIOS
+    OEMID      = 0x00040000
+.else
+    OEMID      = 0x00010000
+.endif
+
+                 %% This region is open for use. Reduce its size by the amount
+                 %% that any of the following code regions need to increase.
+                 %% That will keep the data regions below here from moving.
+.ifnotdefined BUILDING_RECOVERY_BIOS
+    FREE2      = 0x00010000
+.else
+    FREE2      = 0x00010000
+.endif
+
+WriteProtectStart:
+
+                %% This region holds the Intel or Dell/DotHill RAID OROMs
+                %% (both legacy and UEFI).
+.ifnotdefined BUILDING_RECOVERY_BIOS
+    RAID_OROM  = 0x000A0000
+.else
+    RAID_OROM  = 0x00020000
+.endif
+
+                 %% CPU Microcode is stored here
+    MICROCODE  = 0x00050000
+
+                 %% Firmware Interface Table
+    FIT_TABLE  = 0x00008000
+
+                 %% BootGuard Key and Boot Policy Manifests
+    BTG_KM     = 0x00004000
+    BTG_BPM    = 0x00004000
+
+                 %% Memory reference code.
+    MRC        = 0x001C0000
+
+                 %% The next 3 values are subregions that together make up the
+                 %% ACM region of the flash.
+    ACM_FVHDR  = 0x00010000
+    ACM_BIOS   = 0x00040000   %% THIS SIZE IS CHIPSET-SPECIFIC AND CANNOT CHANGE!
+    ACM_INIT   = 0x00040000   %% THIS SIZE IS CHIPSET-SPECIFIC AND CANNOT CHANGE!
+
+                 %% Finally, we have the SEC and PEI phase code. The total size
+                 %% of these regions must be an exact multiple of the mandatory
+                 %% ACM_ALIGNMENT variable defined in the previous section.
+    PEI2       = 0x001B0000
+    SEC_PEI    = 0x00010000
+
+WriteProtectEnd:
+
+
+SECTION_END:
+
+
+
+%% -----------------------------------------------------------------------------
+%% Some optional defines. These get defined in the DSC, FDF, and .h files.
+%% -----------------------------------------------------------------------------
+
+OPTIONAL:
+
+%% ------------------------------------------------------------------------------
+%% Set INCLUDE_OEMID_DATA to 1 to include "fake" OEM ID (formerly Personality
+%% Module) data in the flash image for development/testing/debugging. The fake
+%% data that is included is defined in file PmFdfData.txt.
+%% ------------------------------------------------------------------------------
+    INCLUDE_OEMID_DATA = 0
+
+%% ------------------------------------------------------------------------------
+%% Set FLASH_OEMID_DATA to non-zero to allow the flash program to write to the PM
+%% area of the flash part.
+%% ------------------------------------------------------------------------------
+    FLASH_OEMID_DATA   = 0
+
+%% ******************************************************************************
+%% * Combinations of INCLUDE_OEMID_DATA and FLASH_OEMID_DATA for testing:       *
+%% *                                                                            *
+%% * INCLUDE_OEMID_DATA--+ +--FLASH_OEMID_DATA                                  *
+%% *                     | |                                                    *
+%% *                     v v                                                    *
+%% *                     0 0  Normal Build (do not flash PM area)               *
+%% *                     1 1  Write fake PM data to flash (rebrand)             *
+%% *                     0 1  Wipe PM data from flash (debrand)                 *
+%% *                     1 0  Special (PM data in image; do not flash PM area)  *
+%% *                                                                            *
+%% ******************************************************************************
+
+SECTION_END:
+
+
+
+%% -----------------------------------------------------------------------------
+%% A section of text to be copied directly into BuildPkgFlashMapDefines.h.
+%% -----------------------------------------------------------------------------
+
+H_VERBATIM:
+//
+// BuildPkgFlashMapDefines.h -- Taurus flash defines
+//
+// Copyright (c) 2013-2016, Dell Inc. All rights reserved.
+//
+// *           * * * * * * * * * * * * * * * * * * * * * * * * * *           *
+//   *       *   !THIS IS AN AUTO-GENERATED FILE -- DO NOT EDIT!   *       *
+//     *   *                                                         *   *
+//       *       IF YOU NEED THIS FILE TO LOOK DIFFERENTLY, THEN       *
+//     *   *     YOU EITHER NEED TO EDIT PlatformConfig.txt, OR      *   *
+//   *       *   PERHAPS make_platform_config.awk.                 *       *
+// *           * * * * * * * * * * * * * * * * * * * * * * * * * *           *
+//
+// This file is generated from the file:
+//
+//             DellPkgs\<ThisBuildPkg>\PlatformConfig.txt
+//
+// by the AWK script:
+//
+//             BuildTools\DellTools\awk\make_platform_config.awk
+//
+
+SECTION_END:
+
+
+
+%% -----------------------------------------------------------------------------
+%% A section of text to be copied directly into PlatformConfig.dsc.
+%% -----------------------------------------------------------------------------
+
+VERBATIM:
+## @file PlatformConfig.dsc -- Taurus Configuration File.
+#
+# Copyright (c) 2013-2016, Dell Inc. All rights reserved.
+#
+# *           * * * * * * * * * * * * * * * * * * * * * * * * * *           *
+#   *       *   !THIS IS AN AUTO-GENERATED FILE -- DO NOT EDIT!   *       *
+#     *   *                                                         *   *
+#       *       IF YOU NEED THIS FILE TO LOOK DIFFERENTLY, THEN       *
+#     *   *     YOU EITHER NEED TO EDIT PlatformConfig.txt, OR      *   *
+#   *       *   PERHAPS make_platform_config.awk.                 *       *
+# *           * * * * * * * * * * * * * * * * * * * * * * * * * *           *
+#
+# This file is generated from the file:
+#
+#             DellPkgs\<ThisBuildPkg>\PlatformConfig.txt
+#
+# by the AWK script:
+#
+#             BuildTools\DellTools\awk\make_platform_config.awk
+#
+# This file enables or disables BIOS features, and it determines the sizes and
+# locations of the various regions of the flash part.
+#
+# The build switches defined here can be used in conditional statements in the
+# platform's DSC file to include, remove, or replace drivers and libraries.
+#
+# The flash-related definitions are used in the platform's FDF file and some of
+# the flash-related build and source files to describe the flash layout.
+#
+#
+##
+
+#
+# TRUE is ENABLE. FALSE is DISABLE.
+#
+# _Dell_  Start:
+DEFINE SERVER_BIOS_FLAG                      = TRUE
+DEFINE UNSIGNED_CAPSULE_ENABLE               = TRUE
+DEFINE NETWORK_ENABLE                        = TRUE
+DEFINE ACPI_DEBUG_ENABLE                     = TRUE
+!if ($(MORMONT_PROJ) == 1)
+DEFINE DEBUG_MENU_ENABLE                     = FALSE
+!else
+!if ($(LUMINOR_PROJ) == 1)
+DEFINE DEBUG_MENU_ENABLE                     = TRUE
+!else
+# Taurus version
+DEFINE DEBUG_MENU_ENABLE                     = TRUE
+!endif
+!endif
+# Threshold mode override is only allowed when debug menu is is enabled.
+# Threshold mode override should be set to TRUE during NPI PT, and during MLK development and PT.
+# Threshold mode override should be set to FALSE at the end of NPI PT, or end of MLK PT.
+!if $(DEBUG_MENU_ENABLE) == TRUE
+  DEFINE PLATFORM_CORERRLOGGINGTHRESHOLD_OVERRIDE  = TRUE
+  DEFINE INTEL_DCI_SUPPORT                     = TRUE
+!endif
+DEFINE FRM_EN                                = FALSE
+DEFINE SOURCE_DEBUG_PKG_ENABLE               = FALSE
+DEFINE EMBEDDED_SHELL_ENABLE                 = FALSE
+DEFINE MEM_ADV_CPGC_TEST_ENABLE              = FALSE
+DEFINE EARLY_CR_MSG_ENABLE                   = FALSE
+DEFINE BRING_UP_BIOS                         = FALSE
+DEFINE DISABLE_ATA_MODE                      = TRUE
+DEFINE IDRAC9_SUPPORT                        = TRUE
+DEFINE DEBUG_OEMID_CODE                      = FALSE
+DEFINE OHCI_SUPPORT_ENABLE                   = TRUE        # To enable Teradichi card
+DEFINE CSM_ENABLE                            = TRUE
+DEFINE ATLAS_TEMP_SWITCH                     = TRUE
+DEFINE MEMORY_VR_ENABLE                      = FALSE
+DEFINE ENABLE_SMMTIME_LOGGING_CODE           = FALSE
+# To enable Arium System Trace debug feature, the following three build switches need to be enabled.
+# TRACE_HUB_DEBUG_ENABLE, TRACE_HUB_ENABLE, ARIUM_TRACE_ENABLE
+# This is for debug purpose only, should not be turned on for A-rev BIOS.
+DEFINE ARIUM_TRACE_ENABLE                    = FALSE       # enable Arium trace feature. Requires TRACE_HUB_ENABLE to be true.
+DEFINE DAPC_SUPPORT_ENABLE                   = TRUE
+DEFINE ADVANCED_ECC_SUPPORT                  = FALSE       # Use this feature flag to enable AdvanceECC mode support
+
+# _Dell_  End:
+
+# PCH BIOS build switches configuration
+#   TRAD_BIOS_ENABLE  =  TRUE   &  ULT_BIOS_ENABLE  =  TRUE   =>  Single BIOS Image for Traditional and ULT
+#   TRAD_BIOS_ENABLE  =  TRUE   &  ULT_BIOS_ENABLE  =  FALSE  =>  BIOS Image ONLY for Traditional  <-  Default
+#   TRAD_BIOS_ENABLE  =  FALSE  &  ULT_BIOS_ENABLE  =  TRUE   =>  BIOS Image ONLY for and ULT
+#   TRAD_BIOS_ENABLE  =  FALSE  &  ULT_BIOS_ENABLE  =  FALSE  =>  NOT Supported; DO NOT USE
+#
+  DEFINE PCHTARGET                           = "LBG"       #_Dell_
+  DEFINE BUILD_TARGET                        = "DEBUG"     #_Dell_
+  DEFINE CPU_SKX                             = TRUE        #_Dell_
+
+  DEFINE TRAD_BIOS_ENABLE = TRUE
+  DEFINE ULT_BIOS_ENABLE = FALSE
+#  DEFINE SUS_WELL_RESTORE_ENABLE            = TRUE        #_Dell_ Only for Desktop, ULT and Mobile PCHs
+  DEFINE UBA_ENABLE = TRUE
+!if $(BUILD_TARGET) == "HYBRID"
+  DEFINE SLE_FLAG_ENABLE                     = TRUE
+!endif
+
+!if $(BUILD_TARGET) == "DEBUG"
+  DEFINE CRB_FLAG_ENABLE                     = FALSE
+!else
+  DEFINE CRB_FLAG_ENABLE                     = TRUE
+!endif
+
+  DEFINE SV_BIOS_ENABLE                      = FALSE
+
+#!if $(SUB_TARGET) == "SILENT"
+#  DEFINE DEBUG_FLAGS_ENABLE                  = FALSE
+#!else
+#  DEFINE DEBUG_FLAGS_ENABLE                  = TRUE
+#!endif
+
+  DEFINE SOFTSIM_BIOS_ENABLE                 = FALSE
+  DEFINE SIMICS_ENABLE                       = FALSE
+  DEFINE AEP_ENABLE                          = FALSE
+  DEFINE AEP_INTEL_MENU                      = FALSE
+#NVDIMM Settings
+  DEFINE NVDIMM_ENABLE                       = TRUE
+  ##HOST_MANAGED_POLICY: TRUE (BATTERY) FALSE(SUPERCAP)
+  DEFINE HOST_MANAGED_POLICY                 = TRUE
+  DEFINE NVDIMM_VERBOSE_DEBUG                = TRUE
+  #TRUE: Microsoft NFIT (1-way interleave) FALSE: Intel NFIT (interleave support)
+  DEFINE NVDIMM_MULTITHREAD_FMP              = TRUE
+  #TRUE: Interleave support FALSE: 1-way interleave support
+  DEFINE NVDIMM_DIS_USEAS_RAM                = FALSE
+  DEFINE NVDIMM_ATOMIC_ARM_ERASE_FEATURE     = FALSE
+  DEFINE PERFORMANCE_ENABLE                  = FALSE
+#!if $(SUB_TARGET) == "SILENT"
+#DEFINE PERFORMANCE_ENABLE                    = TRUE
+#!else
+#DEFINE PERFORMANCE_ENABLE                    = FALSE
+#!endif
+  DEFINE RSTE_TEST                           = FALSE
+  DEFINE SKHYNIX_SMARTPPR_ENABLE             = FALSE
+
+!if $(PCHTARGET) == "SPT"
+  DEFINE SERVER_BIOS_ENABLE                  = TRUE
+  DEFINE PCH_SERVER_BIOS_ENABLE              = FALSE
+  DEFINE PCH_SPT                             = TRUE
+  DEFINE PCH_PO_FLAG                         = FALSE
+!elseif $(PCHTARGET) == "LBG"
+  DEFINE SERVER_BIOS_ENABLE                  = TRUE
+  DEFINE PCH_SERVER_BIOS_ENABLE              = TRUE
+  DEFINE PCH_SPT                             = TRUE
+  DEFINE PCH_PO_FLAG                         = FALSE
+!elseif $(PCHTARGET) == "WBG"
+  DEFINE SERVER_BIOS_ENABLE                  = TRUE
+  DEFINE PCH_SERVER_BIOS_ENABLE              = TRUE
+  DEFINE PCH_SPT                             = FALSE
+  DEFINE PCH_PO_FLAG                         = FALSE
+!endif
+
+!if $(CPU_SKX) == TRUE
+#
+# RAS is only valid for SKX, will not build for HSX
+#
+!if $(BUILD_TARGET) == "HYBRID"
+  DEFINE RAS_SUPPORT                         = FALSE
+!else
+!if $(BRING_UP_BIOS) == TRUE                               #_Dell_
+DEFINE RAS_SUPPORT                           = FALSE       #_Dell_
+!else                                                      #_Dell_
+DEFINE RAS_SUPPORT                           = TRUE        #_Dell_
+!endif                                                     #_Dell_
+!endif
+!else
+  DEFINE RAS_SUPPORT                         = FALSE
+!endif
+DEFINE RAS_CPU_ONLINE_OFFLINE_ENABLE         = TRUE
+DEFINE BIOSGUARD_EC_ENABLE                   = FALSE
+DEFINE SPARING_SCRATCHPAD_ENABLE             = TRUE
+
+DEFINE SPS_ENABLE                            = TRUE
+DEFINE ME_WS_ENABLE                          = FALSE    ## From RC554D30, change to FALSE
+#!if $(ME_WS_ENABLE) == TRUE
+#DEFINE AMT_ENABLE                            = TRUE
+#!endif
+DEFINE AMT_ENABLE                            = FALSE    ## _Dell_ No AMT for server
+!if $(AMT_ENABLE) == TRUE
+DEFINE ICC_ENABLE                            = TRUE
+DEFINE ASF_PEI_ENABLE                        = TRUE
+!endif
+
+DEFINE SECURE_BOOT_ENABLE                    = TRUE
+DEFINE HTTPS_SUPPORT_ENABLE                  = TRUE
+DEFINE RECOVERY_BIOS_FLASH_SIZE              = 0x01000000
+DEFINE MAIN_BIOS_FLASH_SIZE                  = 0x02000000
+
+
+#
+# If any of ME applications built on ME Kernal is enabled
+# enable the ME Kernel support with ME_ENABLE flag.
+#
+
+#
+# If any of ME applications built on ME Kernal is enabled
+# enable the ME Kernel support with ME_ENABLE flag.
+#
+!if ($(ME_WS_ENABLE) == TRUE) || ($(SPS_ENABLE) == TRUE)
+  DEFINE ME_ENABLE = TRUE
+  DEFINE ME_TESTMENU = TRUE
+!else
+  DEFINE ME_ENABLE = FALSE
+!endif
+
+  DEFINE SPT = Spt
+  DEFINE TRACE_HUB_ENABLE = TRUE                           #_Dell_ tied with ARIUM_TRACE_ENABLE
+## RC551D03 added, need to review
+!if $(PERFORMANCE_ENABLE) == TRUE
+  DEFINE TRACE_HUB_DEBUG_ENABLE = FALSE
+!else
+  DEFINE TRACE_HUB_DEBUG_ENABLE = TRUE
+!endif
+## RC551D03 added, need to review
+
+!if $(CPU_SKX) == TRUE
+  DEFINE PPO_FLAG = FALSE
+!else
+  #Define flag only for HSX CPU
+  DEFINE PPO_FLAG = TRUE
+!endif
+
+#
+# Enable IE for LBG only
+#
+!if ($(PCH_SERVER_BIOS_ENABLE) == TRUE)
+  DEFINE IE_ENABLE = FALSE                                 #_Dell_ IE is not used
+!endif
+
+!if $(COMPONENT_LEVEL_VALIDATION_BUILD_ENABLE) == TRUE
+  DEFINE CLV = Clv
+!else
+  DEFINE CLV =
+!endif
+
+#
+# We currently support two ways of building the MRC
+# The original way has OemProcMemInitLib and OemIioInitLib
+# as static libraries that are ultimately linked into the UncoreInitPeim.
+# If MRC_OEM_HOOKS_PPI_SUPPORT is enabled
+#  Then we create new instances/implementations of the
+#  OemProcMemInitLib and OemIioInitLib library classes that
+#  call a PPI rather.  These are linked into UncoreInitPeim.
+#  Then we create a new PEIM that wraps the original instances of those
+#  library classes and produces the PPI.
+#
+#  We have only updated UncoreInitPeim to use the PPI.  So all DXE and SMM
+#  modules will also continue to use the original OEM hooks library class
+#  instances.
+#
+# As OEM hooks often used other functions from the MRC, we have created
+# MRC services library to expose those functions and limit the size increase
+# due to the new OEM hooks implementation PEIM.
+#
+# If this is not enabled, we just use the original OEM hooks library instances
+# everywhere.
+#
+DEFINE MRC_OEM_HOOKS_PPI_SUPPORT = FALSE
+
+SECTION_END:
+
+
+
+%% -----------------------------------------------------------------------------
+%% The mandatory and size data will appear in place of this section.
+%% -----------------------------------------------------------------------------
+EMIT_DATA:
+SECTION_END:
+
+
+
+%% -----------------------------------------------------------------------------
+%% That's the end of the data. Everything following is documentation...
+%% -----------------------------------------------------------------------------
+
+
+
+
+%% =============================================================================
+%% ============================= RESIZING_REGIONS ==============================
+%% =============================================================================
+%%
+%% If you need to increase the size a region by some amount, you must also
+%% decrease the size of one (or more) of the other regions by the same total
+%% amount.
+%%
+%% For example, if you want to increase the size of the PEI area by two flash
+%% blocks, then you could "steal" one of the FREE blocks, and, say, one of the
+%% MAIN_BIOS blocks (assuming the space is available).
+%%
+%% =============================================================================
+
+
+
+
+%% =============================================================================
+%% ============================== MOVING_REGIONS ===============================
+%% =============================================================================
+%%
+%% SUMMARY: IF YOU MOVE A REGION IN THIS FILE, YOU MUST ALSO MOVE IT IN THE
+%%          .FDF AND THE FLASHMAP.H FILE.
+%%
+%% I have experimentally discovered that you cannot move the MAIN_BIOS area and
+%% then boot successfully.  I have also seen problems with the MRC code running
+%% extremely slowly and then having an RSOD later in DXE when moving regions
+%% around.  In general, I recommend *not* moving regions if at all possible.  If
+%% you must, move as little as possible and TEST, TEST, TEST!!!
+%%
+%% The regions in the SIZES: section must be in order. The first region must be
+%% the one located at the lowest flash address. The remaining regions must be in
+%% order from the next lowest to the highest.
+%%
+%% This order must agree with the order in the .FDF file. In the .FDF file's
+%% [FD] section, each of the regions is described in the low to high order, so
+%% search for "[FD" in the .FDF file to locate the start of the section that
+%% you'll need to modify.
+%%
+%% The order of the sections must also match the data structure defined in the
+%% Intel FlashMap.h file (see INTEL_FLASHMAP). Search the appropriate Intel
+%% FlashMap.h file for "#define EFI_FLASH_AREA_DATA_DEFINITION" to locate the
+%% beginning of the data structure definition.
+%%
+%% =============================================================================
+
+
+
+
+%% =============================================================================
+%% ============================= RENAMING_REGIONS ==============================
+%% =============================================================================
+%%
+%% SUMMARY: IF YOU RENAME A REGION IN THIS FILE, YOU MUST ALSO RENAME IT IN THE
+%%          .FDF AND THE FLASHMAP.H FILE.  IF THE REGION NAME APPEARS IN ANY OF
+%%          THE VERBATIM SECTIONS OF THIS FILE, YOU WILL HAVE TO MAKE CHANGES
+%%          THERE AS WELL.  YOU MAY ALSO HAVE TO EDIT THE AWK SCRIPT THAT
+%%          PROCESSES THIS FILE.  YOU MAY ALSO HAVE TO EDIT SOME PLATFORM-
+%%          SPECIFIC SOURCE FILES THAT USE THESE SYMBOLS.
+%%
+%% The region names that appear in the SIZES section are used to create three
+%% different symbols related to the region:
+%%
+%%              DSC_<region>_PHYSMEMBASE
+%%              DSC_<region>_FLASHBASE
+%%              DSC_<region>_SIZE.
+%%
+%% * These symbols are used in the platform's .FDF file. If you want to change
+%% the region names, you'll need to make the same name changes to the region's
+%% symbols appearing in the .FDF file.
+%%
+%% * These symbols are also used in the Intel FlashMap.h file (see
+%% INTEL_FLASHMAP). If you want to change the region names, you'll need to make
+%% the same name changes to the region's symbols appearing in the Intel
+%% FlashMap.h file used by this Dell platform.
+%%
+%% * These symbols *may* also appear in one or more VERBATIM sections of this
+%% file. If so, you will have to edit the VERBATIM text as appropriate.
+%%
+%% * A few of the region names in this file also appear in the AWK script that
+%% processes this file. That script is located at:
+%%
+%%            BuildTools\DellTools\awk\make_platform_config.awk
+%%
+%% * If any region name you modify appears on the right-hand side of an
+%% assignment statement to the regionNames array, then you'll have to change it
+%% in the AWK script to match the change you make here.
+%%
+%% The regionNames array is defined and populated in function handleUpdate().
+%%
+%% * If there is a system-specific library or protocol that includes the file
+%% BuildPkgFlashMapDefines.h (which is created from the data in this file) then
+%% you will have to check whether the files that include that .h file use one of
+%% the symbols associated with the region name you are changing. If so, you will
+%% have to make the appropriate changes to those source files.
+%%
+%% =============================================================================
+
+
+
+
+%% =============================================================================
+%% ============================== ADDING_REGIONS ===============================
+%% =============================================================================
+%%
+%% SUMMARY: IF YOU ADD A REGION IN THIS FILE, YOU MUST ALSO ADD IT TO THE .FDF
+%%
+%% The region names that appear in the SIZES section are used to create three
+%% different symbols related to the region:
+%%
+%%              DSC_<region>_PHYSMEMBASE
+%%              DSC_<region>_FLASHBASE
+%%              DSC_<region>_SIZE.
+%%
+%% These symbols are defined in <platformPkg>\Include\BuildPkgFlashMapDefines.h
+%% and are used in the .FDF and the platform's FMP code; some are used in the
+%% Intel FlashMap.h file (see INTEL_FLASHMAP), but probably none you would add.
+%%
+%% If you add a region name, then you have to add the new region to the FDF file
+%% in the same location among the existing regions as you do in this file.  That
+%% is, the order of the region names in this file and the .FDF must agree.  The
+%% proper order is from lowest address in the flash part toward the highest
+%% address. In the .FDF file, look for the [FD] section. That is where the flash
+%% regions are defined and where you'll have to add the new one.
+%%
+%% If you need to access information about the region, like its starting address
+%% in the flash, or its size, then you can use the GetRegionInfo() function of
+%% the DPI Flash 2 protocol/PEIM to locate that information. GetRegionInfo()
+%% takes the name of the region (as a UNICODE string) as input. For example:
+%%
+%%    DPI_FLASH_DATA_2_PROTOCOL* pFlashPcol;
+%%    VOID*                      pStart;
+%%    UINT32                     Size;
+%%
+%%    Status = gBS->LocateProtocol(&gDpiFlashData2ProtocolGuid, NULL, &pFlashPcol);
+%%    if (EFI_SUCCESS == Status) {
+%%        FLASH_REGION_STRUCT RegionInfo;
+%%
+%%        Status = pFlashPcol->GetRegionInfo(pFlashPcol, L"A_NEW_REGION", &RegionInfo);
+%%        if (EFI_SUCCESS == Status) {
+%%            pStart = (VOID*) RegionInfo.FlashAddress;
+%%            Size = RegionInfo.Size;
+%%        }
+%%    }
+%%
+%% =============================================================================
+
+
+
+
+%% =============================================================================
+%% ============================== INTEL_FLASHMAP ===============================
+%% =============================================================================
+%%
+%% In the Include directory of every Intel "chipset" Pkg (e.g. "RomleyPkg",
+%% "GrantleyPkg") is a file named FlashMap.h. Each Dell platform will use the
+%% code in one of these packages to interface with the flash part.
+%%
+%% BuildPkgFlashMapDefines.h (which is created from the data in this file) is
+%% included by the FlashMap.h file, so the names and other data in this file
+%% must match the names and data in the FlashMap.h file that is used by this
+%% Dell platform.
+%%
+%% Also, FlashMap.h defines a data structure that describes the flash regions in
+%% order from lowest address to highest address.
+%%
+%% =============================================================================
+
+
+
+
+%% =============================================================================
+%% =============================================================================
+%% ============================ MAIN_DOCUMENTATION =============================
+%% =============================================================================
+%% =============================================================================
+%%
+%% THIS FILE CONTAINS TWO IMPORTANT SETS OF DATA:
+%%
+%% 1) Definitions of the platform's flash layout which are used in the FDF file
+%%    and in some of the source files.
+%%
+%% 2) Build flags and other text that are used in the platform's DSC file.
+%%
+%% THIS FILE IS PROCESSED BY MAKE_PLATFORM_CONFIG.AWK TO CREATE FIVE FILES:
+%%
+%% 1) PlatformConfig.dsc, which is included by the platform's FDF and DSC files,
+%%    and is further processed to create a build-related batch file.
+%%
+%% 2) BuildPkgFlashMapDefines.h, which contains #defines for the flash-related
+%%    definitions in this file and those generated from the definitions in this
+%%    file (by the make_platform_config.awk script).
+%%
+%% 3) DataDeclarations.h which contains two initialized C structures that hold
+%%    generic, flash-related information and information about the name, size,
+%%    location, and first and last flash blocks of each flash region and pseudo-
+%%    region defined in the SIZES: section of this file.
+%%
+%% 4) DataDeclarations.h.bin which contains the equivalent of the two structures
+%%    in DataDeclarations.h in binary form (for appending to the flash image).
+%%
+%% 5) FlashMap.txt, purely for informational purposes, which shows the layout of
+%%    the regions in the flash part and physical meemory.
+%%
+%% IF YOU NEED TO MOVE, RESIZE, OR ADD A FLASH SECTION, YOU MUST READ THE HELP
+%% PROVIDED ABOVE SO THAT YOU DO NOT BREAK THE BUILD. SEARCH FOR THE APPROPRIATE
+%% TOPIC(S):
+%%
+%%     o  MOVING_REGIONS
+%%     o  RENAMING_REGIONS
+%%     o  ADDING_REGIONS
+%%
+%% RULES AND FORMAT OF THIS FILE:
+%%
+%%     o Blank lines are ignored (outside a VERBATIM section--see below).
+%%
+%%     o Anything following "%%" on a line is ignored (if in a VERBATIM section,
+%%       then only if the "%%" is at the start of a line).
+%%
+%%     o Very simple conditional processing is supported using the .ifdefined,
+%%       .ifnotdefined, .else, and .endif statements:
+%%
+%%            .ifdefined <Name of an env var that may or may not be defined>
+%%              <file content>
+%%              .ifnotdefined <Name of an env var that may or may not be defined>
+%%                <file content>
+%%              .endif
+%%            .else
+%%              <other file content>
+%%            .endif
+%%
+%%     o The ".else" conditional statement is optional (that's obvious, right?).
+%%
+%%     o Conditional statements may be nested.
+%%
+%%     o Conditional processing IS performed inside the VERBATIM sections (see
+%%       below).
+%%
+%%     o Any other line that is not a comment or a conditional statement is some
+%%       sort of command or data to be processed.
+%%
+%%     o The data in the file is contained in sections.
+%%
+%%     o A section is composed of the lines *between* one that starts with some
+%%       section command and one that starts with "SECTION_END:".
+%%
+%%     o The section commands are "VERBATIM:", "H_VERBATIM:", "MANDATORY:",
+%%       "OPTIONAL:", "SIZES:", and "EMIT_DATA:".
+%%
+%%     o The data in the VERBATIM sections is output in the order it appears in
+%%       this file.
+%%
+%%     o The data generated from the SIZES, MANDATORY, and OPTIONAL sections is
+%%       output wherever the EMIT_DATA section is located.
+%%
+%%     o The SIZES, MANDATORY, and OPTIONAL sections must appear before the
+%%       EMIT_DATA section.
+%%
+%%     o There must be 1 MANDATORY section, 1 SIZES section, and 1 EMIT_DATA
+%%       SECTION. There may be any number of VERBATIM and H_VERBATIM sections.
+%%       There may be zero or one OPTIONAL sections.
+%%
+%%     o The OPTIONAL section may contain only simple assignments of the form:
+%%       <name> = <numeric_value>.  These will be added to the .h file and the
+%%       config file so they will be available to platform source code and to
+%%       the FDF and DSC files.
+%%
+%%     o All lines in a VERBATIM section are copied directly to the output
+%%       config file, unless they start with "%%", which is unlikely to appear
+%%       in an FDF file, or unless they are conditional statements (.ifdefined,
+%%       .ifnotdefined, .else, and .endif).
+%%
+%%     o All lines in an H_VERBATIM section are copied directly to the output
+%%       .H file, unless they start with "%%", which is unlikely to appear
+%%       in a .H file, or unless they are conditional statements (.ifdefined,
+%%       .ifnotdefined, .else, and .endif).
+%%
+%%     o The MANDATORY section defines 7 variables that must be defined by name:
+%%
+%%       * BIOS_FLASH_SIZE  : The number of bytes in the flash part that are
+%%              devoted to the BIOS area.
+%%       * FLASH_BLOCK_SIZE : The size in bytes of a single flash block.
+%%       * FLASH_PART_SIZE  : The size in bytes of the flash part.
+%%       * FLASHBASE        : The base address in the flash where the flash
+%%              region having the lowest address begins.
+%%       * DESC_FLASH_SIZE  : The size in bytes of the flash descriptor area.
+%%       * PTU_FLASH_SIZE   : The size in bytes of the PTU area.
+%%       * ME_FLASH_SIZE    : The size in bytes of the ME area.
+%%
+%%     o The SIZES section contains the names and sizes of each flash region.
+%%       THESE *MUST* BE GIVEN IN ORDER FROM THE REGION THAT APPEARS AT THE
+%%       LOWEST FLASH ADDRESS TO THE REGION THAT APPEARS AT THE HIGHEST FLASH
+%%       ADDRESS.
+%%
+%%     o The SIZES section may contain one or more named pseudo-regions. These
+%%       are delimited by "PseudoRegionStart:" and "PseudoRegionEnd:" tokens.
+%%       Each of these tokens must appear first on a line followed by the name
+%%       of the pseudo region; trailing comments are allowed after the name.
+%%       Pseudo-regions may overlap each other or one may be contained within
+%%       another if necessary. The Dell data wipe protocol looks for one such
+%%       region named "UEFI_VARIABLES".
+%%
+%%     o The SIZES section may contain one or more areas needing to be write-
+%%       protected by the BIOS. These areas are delimited by a pair of tokens:
+%%       "WriteProtectStart:" and "WriteProtectEnd:". Each of these tokens must
+%%       appear alone on a line; trailing comments are allowed. The flash
+%%       regions defined between these tokens will be write-protected by the
+%%       BIOS. You may define multiple write-protected areas. This feature is
+%%       normally applied to areas of the flash that contain code.
+%%
+%% =============================================================================
