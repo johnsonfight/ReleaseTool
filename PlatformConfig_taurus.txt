@@ -410,7 +410,7 @@ DEFINE DEBUG_MENU_ENABLE                     = FALSE
 DEFINE DEBUG_MENU_ENABLE                     = TRUE
 !else
 # Taurus version
-DEFINE DEBUG_MENU_ENABLE                     = TRUE
+DEFINE DEBUG_MENU_ENABLE                     = FALSE
 !endif
 !endif
 # Threshold mode override is only allowed when debug menu is is enabled.

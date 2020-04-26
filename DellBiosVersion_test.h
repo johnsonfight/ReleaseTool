@@ -127,9 +127,9 @@
 // Taurus version
 // BIOS version numbers in X.Y.Z format. X,Y, and Z must be within 0 to 99
 //
-#define DELL_BIOS_MAJOR_VERSION       2        // Major release version number
-#define DELL_BIOS_MINOR_VERSION       1        // Minor release version number
-#define DELL_BIOS_MAIN_VERSION        1        // Main release version number
+#define DELL_BIOS_MAJOR_VERSION       2
+#define DELL_BIOS_MINOR_VERSION       7
+#define DELL_BIOS_MAIN_VERSION        4
 
 // The Minimum Compatible BIOS version is the minimum version that this BIOS
 // can be updated from without forcing -wipeclean.  If the current running BIOS
@@ -159,9 +159,9 @@
 //
 // Build Date
 //
-#define DELL_BIOS_BUILD_MONTH          1        // month without leading 0 (1 to 12)
-#define DELL_BIOS_BUILD_DAY            8        // day without leading 0 (1 to 31)
-#define DELL_BIOS_BUILD_YEAR          19        // last 2 digits of the year (0 to 99)
+#define DELL_BIOS_BUILD_MONTH         4
+#define DELL_BIOS_BUILD_DAY           26
+#define DELL_BIOS_BUILD_YEAR          20
                                                 //
 //
 // Feature Capability Flag

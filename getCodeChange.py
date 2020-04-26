@@ -3,7 +3,7 @@ import git
 import configparser #-
 
 config = configparser.ConfigParser() #-
-config.read('readConfig.ini') #-
+config.read('readConfig_taurus.ini') #-
 
 s_repoPath = config.get('git', 'repo_dell') 
 
