@@ -1,32 +1,46 @@
-import os
+import os, sys
 import git
 import configparser
 from datetime import date
 import subprocess
+import time
+import pysvn
+import win32com.client as win32
+
+#  === === === === ===  == == == ==  === === === === ===  #
+#  === === === === ===  == == == ==  === === === === ===  #
+#  === === === === ===  == == == ==  === === === === ===  #
+#  === === === === ===  Initialize   === === === === ===  #
+#  === === === === ===  == == == ==  === === === === ===  #
+#  === === === === ===  == == == ==  === === === === ===  #
+#  === === === === ===  == == == ==  === === === === ===  #
 
 config = configparser.ConfigParser() #-
 config.read('readConfig_all.ini') #-
+print("[OK] Read configuartion from 'readConfig_all.ini'\n")
+print("Please check configuration info is correct.\n")
 
-DebugMenu_Enable_checkbox = False
-DUP_Checkbox = True #INPUT
-# DUP_Checkbox = False
-
-
-
-Mail_Title = ''
-Mail_Content = ''
-
-if DebugMenu_Enable_checkbox == True :
-	DebugMenuONOFF_input = 'Enabled' # X rev
+PLATFORM       = 'Taurus' #INPUT
+DUP_Checkbox   = True #INPUT
+DebugMenu_Enable_checkbox = False #INPUT
+if DebugMenu_Enable_checkbox == True : 
+	DebugMenuONOFF_input = 'Enabled'   # X rev
 elif DebugMenu_Enable_checkbox == False :
-	DebugMenuONOFF_input = 'Disabled' # A-Can
+	DebugMenuONOFF_input = 'Disabled'  # A-Can
 
+v                       = dict(config.items(f"{PLATFORM}"))
+version                 = v['ver_major'] + '.' + v['ver_minor'] + '.' + v['ver_main']
+Codename_lower          = v['codename'].lower()
+New_rel_branch          = f"rel/{Codename_lower}/{Codename_lower}_{v['ver_major']}_{v['ver_minor']}_{v['ver_main']}"
+New_rel_tag             = f"{v['codename']}/{v['ver_major']}_{v['ver_minor']}_{v['ver_main']}"
+DUP_Available_string    = 'DUPs are available on Agile.'
+DUP_NOT_Avaiable_string = 'DUPs are NOT available on Agile.'
+DUP_text = ''
+if DUP_Checkbox is True:
+	DUP_text = DUP_Available_string
+else:
+	DUP_text = DUP_NOT_Avaiable_string
 
-PLATFORM = 'Taurus' #INPUT
-v = dict(config.items(f"{PLATFORM}"))
-
-version = v['ver_major'] + '.' + v['ver_minor'] + '.' + v['ver_main']
-Codename_lower = v['codename'].lower()
 
 if os.path.isdir(v['repo_dell']):
 	repo = git.Repo(v['repo_dell'])
@@ -34,18 +48,6 @@ if os.path.isdir(v['repo_dell']):
 	print(repo)
 else:
 	print('did not get repo')
-
-
-New_rel_branch          = f"rel/{Codename_lower}/{Codename_lower}_{v['ver_major']}_{v['ver_minor']}_{v['ver_main']}"
-New_rel_tag             = f"{v['codename']}/{v['ver_major']}_{v['ver_minor']}_{v['ver_main']}"
-DUP_Available_string    = 'DUPs are available on Agile.'
-DUP_NOT_Avaiable_string = 'DUPs are NOT available on Agile.'
-DUP_text = ''
-if DUP_Checkbox is True: #INPUT
-	DUP_text = DUP_Available_string
-else:
-	DUP_text = DUP_NOT_Avaiable_string
-
 
 #
 # Files needed to be modified
@@ -74,15 +76,15 @@ find_DebugMenu      = 'Debug Menu is '
 find_CHANGES        = 'CHANGES:'
 
 # [DellBiosVersion]
-keyword_Platform = f" {v['codename']} version"
-find_Major_ver = '#define DELL_BIOS_MAJOR_VERSION       '
-find_Minor_ver = '#define DELL_BIOS_MINOR_VERSION       '
-find_Main_ver  = '#define DELL_BIOS_MAIN_VERSION        '
-find_Build_Month = '#define DELL_BIOS_BUILD_MONTH         '
-find_Build_Day = '#define DELL_BIOS_BUILD_DAY           '
-find_Build_Year = '#define DELL_BIOS_BUILD_YEAR          '
+keyword_Platform    = f" {v['codename']} version" # hashtag
+find_Major_ver      = '#define DELL_BIOS_MAJOR_VERSION       '
+find_Minor_ver      = '#define DELL_BIOS_MINOR_VERSION       '
+find_Main_ver       = '#define DELL_BIOS_MAIN_VERSION        '
+find_Build_Month    = '#define DELL_BIOS_BUILD_MONTH         '
+find_Build_Day      = '#define DELL_BIOS_BUILD_DAY           '
+find_Build_Year     = '#define DELL_BIOS_BUILD_YEAR          '
 
-find_DebugMenu_PlatConf = 'DEBUG_MENU_ENABLE                     = '
+find_DebugMenu_PC   = 'DEBUG_MENU_ENABLE                     = '
 
 
 #
@@ -91,13 +93,17 @@ find_DebugMenu_PlatConf = 'DEBUG_MENU_ENABLE                     = '
 
 RN_list_keywords = [find_Version, find_System, find_Release_Date, find_Release_By, find_SWB, find_AEP_Driver, find_Important_Note, find_Known_Issues, find_DebugMenu, find_CHANGES]
 BV_list_keywords = [find_Major_ver, find_Minor_ver, find_Main_ver, find_Build_Month, find_Build_Day, find_Build_Year]
-DM_list_keywords = find_DebugMenu_PlatConf
+DM_list_keywords = find_DebugMenu_PC
 
 
 
-
-
+#  === === === === ===  == == == ==  === === === === ===  #
+#  === === === === ===  == == == ==  === === === === ===  #
+#  === === === === ===  == == == ==  === === === === ===  #
 #  === === === === ===   Functions   === === === === ===  #
+#  === === === === ===  == == == ==  === === === === ===  #
+#  === === === === ===  == == == ==  === === === === ===  #
+#  === === === === ===  == == == ==  === === === === ===  #
 
 class File_Data():
 	def __init__(self, contents, row):
@@ -109,12 +115,12 @@ def Prepare_for_repo():
 	if os.path.isdir(v['repo_dell']):
 		repo = git.Repo(v['repo_dell'])
 		# r = repo.remotes.origin
-		print(repo)
+		print(f"[OK] Get repo {repo}")
 	else:
-		print('did not get repo')
+		print(f"'[Error] Did not get {repo}")
 
-	repo.git.checkout(f"{git_working_branch}")
-	repo.git.pull('origin', f"{git_working_branch}")
+	repo.git.checkout(f"{v['working_branch']}")
+	repo.git.pull('origin', f"{v['working_branch']}")
 
 def Read_last_version_File(filename):
 	contents_row = 0
@@ -272,7 +278,7 @@ def find_keywords_n_edit_DM(obj, keywords, Platform, DebugMenuONOFF):
 			while j < i + 5:
 				try:				
 					index = obj.contents[j].index(keywords)
-					if keywords == find_DebugMenu_PlatConf:
+					if keywords == find_DebugMenu_PC:
 						print(f"\n----------------------------------------------------------------------")
 						print(f"Code change in '{Last_ver_PlatformConfig}'' : \n")
 						if DebugMenuONOFF_input is 'Enabled':
@@ -293,26 +299,9 @@ def find_keywords_n_edit_DM(obj, keywords, Platform, DebugMenuONOFF):
 	return obj.contents
 
 
-
-# file path C:\BEA\14gmlk_junfy21\DellPkgs\DellPlatformPkgs\DellTaurusPkg
 # path_LVRN = 
 path_BV   = v['repo_dell'] + 'DellPkgs/DellPlatformPkgs/' + f"Dell{v['codename']}Pkg/Include/" + Last_ver_DellBiosVersion
 path_PC   = v['repo_dell'] + 'DellPkgs/DellPlatformPkgs/' + f"Dell{v['codename']}Pkg/" + Last_ver_PlatformConfig
-
-if os.path.isfile(path_BV):
-	print(f"get {path_BV}")
-else:
-	print(f"did not get {path_BV}")
-
-if os.path.isfile(path_PC):
-	print(f"get {path_PC}")
-else:
-	print(f"did not get {path_PC}")
-
-
-
-
-
 
 
 
@@ -326,8 +315,15 @@ def create_RN(file, keywords):
 	outputfile = This_ver_RN
 	Create_this_version(obj, outputfile)
 
+	return obj
 
-def create_BV(file, keywords):
+
+def edit_BV(file, keywords):
+	if os.path.isfile(path_BV):
+		print(f"get {path_BV}")
+	else:
+		print(f"did not get {path_BV}")
+
 	[get_contents, get_row] = Read_last_version_File(file)
 	obj = File_Data(get_contents, get_row)
 
@@ -336,7 +332,12 @@ def create_BV(file, keywords):
 
 	Create_this_version(obj, file)
 
-def create_DM(file, keywords):
+def edit_PC(file, keywords):
+	if os.path.isfile(path_PC):
+		print(f"get {path_PC}")
+	else:
+		print(f"did not get {path_PC}")
+
 	[get_contents, get_row] = Read_last_version_File(file)
 	obj = File_Data(get_contents, get_row)
 
@@ -348,23 +349,29 @@ def create_DM(file, keywords):
 
 
 
-
-
-
-
 #
 # Build & Release & upload SVN & Rename EFI
 #
 
 
 def build_n_release():
-	folder_path = 'C:/BEA/edk2/gemini_foxconn/DellPkgs/DellPlatformPkgs/DellTaurusPkg/'
-	folder_path = v['repo_dell']
+	# folder_path = 'C:/BEA/edk2/gemini_foxconn/DellPkgs/DellPlatformPkgs/DellTaurusPkg/'
+	folder_path = v['repo_dell'] + 'DellPkgs/DellPlatformPkgs/' + f"Dell{v['codename']}Pkg/"
 
 	print(folder_path + 'Makea_Arev_Release.bat')
 
+
+	version_string = f"0{v['ver_major']}0{v['ver_minor']}0{v['ver_main']}"
+
+	if DebugMenu_Enable_checkbox == True :    # X rev
+		bat_file = 'Makea_Release.bat'
+		rel_cmd = ['release.bat', v['codename'],  version_string]
+	elif DebugMenu_Enable_checkbox == False : # A-Can
+		bat_file = 'Makea_Arev_Release.bat'
+		rel_cmd = ['release.bat', v['codename'],  version_string, 'A']
+
 	try:
-		p1 = subprocess.check_call(['Makea_Arev_Release.bat'], shell=True, cwd=f'{folder_path}')
+		p1 = subprocess.check_call([f"{bat_file}"], shell=True, cwd=f'{folder_path}')
 		print('ok')
 	except subprocess.CalledProcessError:
 		print('error')
@@ -372,42 +379,54 @@ def build_n_release():
 
 
 	try:
-		p2 = subprocess.check_call(['release.bat', 'R440',  '020799', 'A'], shell=True, cwd=f'{folder_path}')
-		print('R440 ok')
+		p2 = subprocess.check_call(['release.bat', 'R440',  '020706', 'A'], shell=True, cwd=f'{folder_path}')
+		print('[OK] release.bat for R440')
 	except subprocess.CalledProcessError:
 		print('error')
-
-
 
 	try:
-		p2 = subprocess.check_call(['release.bat', 'R740xd2',  '020799', 'A'], shell=True, cwd=f'{folder_path}')
-		print('R740xd2 ok')
+		p2 = subprocess.check_call(['release.bat', 'R740xd2',  '020706', 'A'], shell=True, cwd=f'{folder_path}')
+		print('[OK] release.bat for R740xd2')
 	except subprocess.CalledProcessError:
 		print('error')
 
 
+def upload_to_svn():
+	if DebugMenu_Enable_checkbox == True :    # X rev
+		C = ''
+	elif DebugMenu_Enable_checkbox == False : # A-Can
+		C = '-C'
 
+	client = pysvn.Client()
+	folder_name = f"T:/Projects/14G.TDC.projects/{v['codename']}/Release/0{v['ver_major']}.0{v['ver_minor']}.0{v['ver_main']}{C}/{v['systemname']}/"
+	file_name = f"{v['systemname']}-0{v['ver_major']}0{v['ver_minor']}0{v['ver_main']}.efi"
+	file_path = folder_name + file_name
 
+	# ODM SVN (Foxconn)
+	svn_url = f"https://f2dsvn.{v['odm']}.com/svn/14G_misc/{v['codename']}/Release/BIOS/MLK/{v['ver_major']}.{v['ver_minor']}.{v['ver_main']}/{file_name}"
+	print(f"Get SVN path : {svn_url}")
 
+	client.import_(path = file_path,
+	               url = f'{svn_url}',
+	               log_message = 'Hi Webb, EFI file was uploaded. Please help perform POT. Thanks!')
+	print("[OK] Upload to svn. Please check it.")
 
-
-
-
-
-
-
-
-
-
-
-
-
+#
 #
 # Create mail
 #
+#
 
-def create_release_mail(Title, Content):
-	Title = f"Release : BIOS, Dell Server BIOS {v['generation']}, {v['codename']} {v['subcodename']}, {v['revision']} {version} ({v['block']}), SWB#{v['softwarebundle']}" 
+def read_RN(file):
+	[get_contents, get_row] = Read_last_version_File(file)
+	obj = File_Data(get_contents, get_row)
+
+	return obj
+
+
+
+def create_release_mail(Title, Content, *obj):
+	Title = f"Release : BIOS, Dell Server BIOS {v['generation']}, {v['codename']} {v['subcodename']}, {v['revision']} {version} ({v['block']}), SWB#{v['softwarebundle']} (X0{v['ver_main']}-00)" 
 	print(Content)
 	print('\n')
 	print('\n')
@@ -418,12 +437,22 @@ def create_release_mail(Title, Content):
 	SWB# : {v['softwarebundle']}\n\
 	{DUP_text}\n\
 	\n\
-	Please check internal release note for the detail of BIOS changes.\n\
-	Thanks.\n\
-	\n\
-	Best Regards,\n\
-	{v['name']} "  #Convert first letter to Capital 
+	\n" 
+	# print(Content)
+	# Add Release note
+	if obj[0] is not None:
+		for line in obj[0].contents:
+			Content += f"{line}\n"
 	print(Content)
+
+	olook = win32.Dispatch("outlook.application")
+	mail = olook.CreateItem(0)
+	mail.To = v['receivers']
+	mail.CC = v['cc']
+	mail.Subject = Title
+	mail.Body = Content
+	mail.Display(True)
+
 	return Title, Content
 
 # Release : BIOS, Dell Server BIOS Polaris, Taurus (Ice, Rosetta, Genesis) , X-Rev , 2.7.2 (JunFY21), SWB#MHV07 (X02-00)
@@ -460,11 +489,6 @@ def write_into_txt(Title, Content):
 
 
 #
-# Python package to send
-#
-
-
-#
 # Create rel branch
 #
 # [ESGB-2148][Taurus] Change JunFY21 BIOS version to 02.07.04.
@@ -474,13 +498,22 @@ def commit_block_branch():
 	repo.git.pull('origin', f"{v['working_branch']}")
 
 	# Do Not commit Recovery .rom
-	if repo.git.status().find('16MBRecoveryBios.rom') != 0 :
-		repo.git.reset('DellPkgs/DellPlatformPkgs/DellTaurusPkg/BiosRecovery/Taurus_16MBRecoveryBios.rom')
+	# if repo.git.status().find('16MBRecoveryBios.rom') != 0 :
+	# 	repo.git.reset('DellPkgs/DellPlatformPkgs/DellTaurusPkg/BiosRecovery/Taurus_16MBRecoveryBios.rom')
 
-	# repo.git.commit('-m', f"[ESGB-{v['esgb_number']}][{v['codename']}] Change {v['block']} BIOS version to 0{v['ver_major']}.0{v['ver_minor']}.0{v['ver_main']}.")
+	for item in repo.index.diff('HEAD~1'):
+		# print(item.a_path)
+		if  item.a_path in path_BV:
+			repo.git.add(f"{path_BV}")
+			print(f"add {path_BV} to commit")
 
+		if  item.a_path in path_PC:
+			repo.git.add(f"{path_PC}")
+			print(f"add {path_PC} to commit")
 
-	# repo.git.push('origin', f"{git_working_branch}')
+	repo.git.commit('-m', f"[ESGB-{v['esgb_number']}][{v['codename']}] Change {v['block']} BIOS version to 0{v['ver_major']}.0{v['ver_minor']}.0{v['ver_main']}.")
+
+	repo.git.push('origin', f"{v['working_branch']}")
 
 def create_rel_branch():
 	repo.git.pull('origin', f"{v['working_branch']}")
@@ -511,45 +544,50 @@ def update_INIdata():
 
 
 
+#  === === === === ===  == == == ==  === === === === ===  #
+#  === === === === ===  == == == ==  === === === === ===  #
+#  === === === === ===  == == == ==  === === === === ===  #
+#  === === === === ===    Execute    === === === === ===  #
+#  === === === === ===  == == == ==  === === === === ===  #
+#  === === === === ===  == == == ==  === === === === ===  #
+#  === === === === ===  == == == ==  === === === === ===  #
 
 
-
-#  == == == == ==  Execute  == == == == ==  #
-
-
-
-
+# -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
 #
-# Create the file
+# Step 1 : Fetch RN, git repo, and create code change
 #
 
 # Prepare_for_repo()
+# RN_obj = create_RN(Leading_V_RN_File_Name, RN_list_keywords)
+# edit_BV(path_BV, BV_list_keywords)
+# edit_PC(path_PC, DM_list_keywords)
+# time.sleep(10)
 
-# for RN
-create_RN(Leading_V_RN_File_Name, RN_list_keywords)
+# RN_obj = read_RN(read_RN_path) # Test for Spitzer RN
 
-# for DellBiosVersion.h
-create_BV(path_BV, BV_list_keywords)
+# -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+#
+# Step 2 : Fetch RN, git repo, and create code change
+#
 
-# for PlatformConfig_taurus.txt
-create_DM(path_PC, DM_list_keywords)
+# build_n_release()
+# upload_to_svn()
 
+# -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+#
+# Step 3 : Release mail, create branch & tag
+#
 
-
-
-
-
-
-
-
-
-
-
-# Mail_Title, Mail_Content = create_release_mail(Mail_Title, Mail_Content)
+Mail_Title = ''
+Mail_Content = ''
+# Mail_Title, Mail_Content = create_release_mail(Mail_Title, Mail_Content, RN_obj)
 # write_into_txt(Mail_Title, Mail_Content)
 
-# update_INIdata()
-# commit_block_branch()
+commit_block_branch()
 # create_rel_branch()
 # create_rel_tag()
 
+# update_INIdata() # from GUI INPUT
+
+sys.exit(1)
