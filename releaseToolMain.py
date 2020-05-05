@@ -7,6 +7,7 @@ import time
 import pysvn
 import win32com.client as win32
 
+
 #  === === === === ===  == == == ==  === === === === ===  #
 #  === === === === ===  == == == ==  === === === === ===  #
 #  === === === === ===  == == == ==  === === === === ===  #
@@ -17,22 +18,24 @@ import win32com.client as win32
 
 config = configparser.ConfigParser() #-
 config.read('readConfig_all.ini') #-
-print("[OK] Read configuartion from 'readConfig_all.ini'\n")
-print("Please check configuration info is correct.\n")
+print("[O] Read configuartion from 'readConfig_all.ini'\n")
+print("    Please check configuration info is correct.\n")
 
-PLATFORM       = 'Taurus' #INPUT
+PLATFORM       = ['Taurus', 'Spitzer'] #INPUT
+
 DUP_Checkbox   = True #INPUT
 DebugMenu_Enable_checkbox = False #INPUT
 if DebugMenu_Enable_checkbox == True : 
 	DebugMenuONOFF_input = 'Enabled'   # X rev
+	C = ''
 elif DebugMenu_Enable_checkbox == False :
 	DebugMenuONOFF_input = 'Disabled'  # A-Can
+	C = '-C'
 
-v                       = dict(config.items(f"{PLATFORM}"))
-version                 = v['ver_major'] + '.' + v['ver_minor'] + '.' + v['ver_main']
-Codename_lower          = v['codename'].lower()
-New_rel_branch          = f"rel/{Codename_lower}/{Codename_lower}_{v['ver_major']}_{v['ver_minor']}_{v['ver_main']}"
-New_rel_tag             = f"{v['codename']}/{v['ver_major']}_{v['ver_minor']}_{v['ver_main']}"
+P = []
+for i in PLATFORM:
+	P.append(dict(config.items(i)))
+
 DUP_Available_string    = 'DUPs are available on Agile.'
 DUP_NOT_Avaiable_string = 'DUPs are NOT available on Agile.'
 DUP_text = ''
@@ -42,22 +45,20 @@ else:
 	DUP_text = DUP_NOT_Avaiable_string
 
 
-if os.path.isdir(v['repo_dell']):
-	repo = git.Repo(v['repo_dell'])
+if os.path.isdir(P[0]['repo_dell']):
+	repo = git.Repo(P[0]['repo_dell'])
 	# r = repo.remotes.origin
-	print(repo)
+	print(f"[O] Find repo : {repo}")
 else:
-	print('did not get repo')
+	print('[X] Did not find repo')
 
 #
 # Files needed to be modified
 #
-Leading_V_RN_File_Name   = f"{v['leading_v']}-0{v['ver_major']}0{v['ver_minor']}0{v['ver_main']}.txt"
-This_ver_RN              = f"{v['systemname']}-0{v['ver_major']}0{v['ver_minor']}0{v['ver_main']}_test.txt"
+Leading_V_RN_File_Name   = f"{P[0]['leading_v']}-0{P[0]['ver_major']}0{P[0]['ver_minor']}0{P[0]['ver_main']}.txt"
+This_ver_RN              = f"{P[0]['systemname']}-0{P[0]['ver_major']}0{P[0]['ver_minor']}0{P[0]['ver_main']}_test.txt"
 Last_ver_DellBiosVersion = 'DellBiosVersion.h'
 Last_ver_PlatformConfig  = 'PlatformConfig.txt'
-
-
 
 #
 # Const
@@ -65,9 +66,9 @@ Last_ver_PlatformConfig  = 'PlatformConfig.txt'
 
 # [RN]
 find_Version        = 'Version:      '
-find_System         = 'System:       ' #+
+find_System         = 'System:       '
 find_Release_Date   = 'Release Date: '
-find_Release_By     = 'Released By:  ' #+
+find_Release_By     = 'Released By:  '
 find_SWB            = 'SWB#:         '
 find_AEP_Driver     = 'AEP Driver'
 find_Important_Note = 'Important Note:'
@@ -75,8 +76,8 @@ find_Known_Issues   = 'Known Issues:'
 find_DebugMenu      = 'Debug Menu is '
 find_CHANGES        = 'CHANGES:'
 
-# [DellBiosVersion]
-keyword_Platform    = f" {v['codename']} version" # hashtag
+# [DellBiosVersion.h]
+keyword_Platform    = f" {P[0]['codename']} version" # hashtag
 find_Major_ver      = '#define DELL_BIOS_MAJOR_VERSION       '
 find_Minor_ver      = '#define DELL_BIOS_MINOR_VERSION       '
 find_Main_ver       = '#define DELL_BIOS_MAIN_VERSION        '
@@ -84,13 +85,10 @@ find_Build_Month    = '#define DELL_BIOS_BUILD_MONTH         '
 find_Build_Day      = '#define DELL_BIOS_BUILD_DAY           '
 find_Build_Year     = '#define DELL_BIOS_BUILD_YEAR          '
 
+# [PlatformConfig.txt]
 find_DebugMenu_PC   = 'DEBUG_MENU_ENABLE                     = '
 
-
-#
 # Keywords for get/set code change
-#
-
 RN_list_keywords = [find_Version, find_System, find_Release_Date, find_Release_By, find_SWB, find_AEP_Driver, find_Important_Note, find_Known_Issues, find_DebugMenu, find_CHANGES]
 BV_list_keywords = [find_Major_ver, find_Minor_ver, find_Main_ver, find_Build_Month, find_Build_Day, find_Build_Year]
 DM_list_keywords = find_DebugMenu_PC
@@ -112,21 +110,25 @@ class File_Data():
 
 
 def Prepare_for_repo():
-	if os.path.isdir(v['repo_dell']):
-		repo = git.Repo(v['repo_dell'])
+	if os.path.isdir(P[0]['repo_dell']):
+		repo = git.Repo(P[0]['repo_dell'])
 		# r = repo.remotes.origin
-		print(f"[OK] Get repo {repo}")
+		print(f"[O]  Get repo {repo}")
 	else:
-		print(f"'[Error] Did not get {repo}")
+		print(f"'[X] Did not get {repo}")
 
-	repo.git.checkout(f"{v['working_branch']}")
-	repo.git.pull('origin', f"{v['working_branch']}")
+	repo.git.checkout(f"{P[0]['working_branch']}")
+	repo.git.pull('origin', f"{P[0]['working_branch']}")
 
 def Read_last_version_File(filename):
 	contents_row = 0
 	try:
-		RN_last_ver = open(filename, 'r')
-		contents = RN_last_ver.read().splitlines()
+		RN_last_ver = open(filename, "r")
+		# contents = RN_last_ver.read().splitlines()
+		contents = RN_last_ver.read()
+		contents = contents.rstrip("\n")
+		contents = contents.split("\r\n")
+
 		contents_row = len(contents)
 		RN_last_ver.close()
 
@@ -136,7 +138,7 @@ def Read_last_version_File(filename):
 	return contents, contents_row
 
 def Create_this_version(obj, filename):
-	# filename = f"{v['codename']}-0{v['ver_major']}0{v['ver_minor']}0{v['ver_main']}_Test.txt"
+	# filename = f"{P[0]['codename']}-0{P[0]['ver_major']}0{P[0]['ver_minor']}0{P[0]['ver_main']}_Test.txt"
 	try:
 	    file = open(filename, 'r')
 	    file.truncate(0) #clear the file
@@ -162,15 +164,15 @@ def find_keywords_n_edit_RN_info(obj, keywords, DebugMenuONOFF):
 		try:
 			index = obj.contents[i].index(keywords)
 			if keywords == find_Version:
-				obj.contents[i] = obj.contents[i][:(index + len(keywords))] + f"{v['ver_major']}.{v['ver_minor']}.{v['ver_main']}"
+				obj.contents[i] = obj.contents[i][:(index + len(keywords))] + f"{P[0]['ver_major']}.{P[0]['ver_minor']}.{P[0]['ver_main']}"
 			elif keywords == find_System:
-				obj.contents[i] = obj.contents[i][:(index + len(keywords))] + f"{v['codename']} {v['subcodename_systemname']}" #!
+				obj.contents[i] = obj.contents[i][:(index + len(keywords))] + f"{P[0]['codename']} {P[0]['subcodename_systemname']}"
 			elif keywords == find_Release_Date:
-				obj.contents[i] = obj.contents[i][:(index + len(keywords))] + f"{v['month']}/{v['day']}/{v['year']}"
+				obj.contents[i] = obj.contents[i][:(index + len(keywords))] + f"{P[0]['month']}/{P[0]['day']}/{P[0]['year']}"
 			elif keywords == find_Release_By:
-				obj.contents[i] = obj.contents[i][:(index + len(keywords))] + f"{v['name']}" #!
+				obj.contents[i] = obj.contents[i][:(index + len(keywords))] + f"{P[0]['name']}"
 			elif keywords == find_SWB:
-				obj.contents[i] = obj.contents[i][:(index + len(keywords))] + f"{v['softwarebundle']}"
+				obj.contents[i] = obj.contents[i][:(index + len(keywords))] + f"{P[0]['swb']}"
 				if obj.contents[i + 1].index(find_SWB) != -1:
 					del obj.contents[i + 1]
 			elif keywords == find_AEP_Driver:
@@ -205,11 +207,11 @@ def find_keywords_n_edit_RN_info(obj, keywords, DebugMenuONOFF):
 				obj.contents[i] = obj.contents[i][:(index + len(keywords))] + f"{DebugMenuONOFF}" + ' in this version.'	
 
 			elif keywords == find_CHANGES:
-				obj.contents.insert(i+2, f"1. [ESGB-{v['esgb_number']}] Change {v['block']} BIOS version to 0{v['ver_major']}.0{v['ver_minor']}.0{v['ver_main']}")
-				obj.contents.insert(i+3, f"2. Sync to 14G codebase to launch-1(Atlas) {v['ver_major']}.{v['ver_minor']}.{v['ver_main']}")
+				obj.contents.insert(i+2, f"1. [ESGB-{P[0]['esgb_number']}] Change {P[0]['block']} BIOS version to 0{P[0]['ver_major']}.0{P[0]['ver_minor']}.0{P[0]['ver_main']}")
+				obj.contents.insert(i+3, f"2. Sync to 14G codebase to launch-1(Atlas) {P[0]['ver_major']}.{P[0]['ver_minor']}.{P[0]['ver_main']}")
 				obj.contents.insert(i+4, f"")
 				obj.contents.insert(i+5, '*************************************************')
-				obj.contents.insert(i+6, f"Sync to 14G codebase to launch-1(Atlas) {v['ver_major']}.{v['ver_minor']}.{v['ver_main']}")
+				obj.contents.insert(i+6, f"Sync to 14G codebase to launch-1(Atlas) {P[0]['ver_major']}.{P[0]['ver_minor']}.{P[0]['ver_main']}")
 				obj.contents.insert(i+7, '*************************************************')
 
 				print(f"\n----------------------------------------------------------------------")
@@ -227,7 +229,7 @@ def find_keywords_n_edit_BV(obj, keywords, Platform):
 	index = 0
 	i = 0
 	while i < obj.row:
-		if obj.contents[i].find(f'{Platform}') != -1:
+		if obj.contents[i].find(Platform) != -1:
 			j = i
 			while j < i + 50:
 				try:
@@ -235,28 +237,28 @@ def find_keywords_n_edit_BV(obj, keywords, Platform):
 					if keywords == find_Major_ver:
 						print(f"\n----------------------------------------------------------------------")
 						print(f"Code change in '{Last_ver_DellBiosVersion}'' : \n")
-						obj.contents[j] = obj.contents[j][:(index + len(keywords))] + f"{v['ver_major']}"
+						obj.contents[j] = obj.contents[j][:(index + len(keywords))] + f"{P[0]['ver_major']}"
 						print('    ' + obj.contents[j])
 						break
 					elif keywords == find_Minor_ver:
-						obj.contents[j] = obj.contents[j][:(index + len(keywords))] + f"{v['ver_minor']}"
+						obj.contents[j] = obj.contents[j][:(index + len(keywords))] + f"{P[0]['ver_minor']}"
 						print('    ' + obj.contents[j])
 						break
 					elif keywords == find_Main_ver:
-						obj.contents[j] = obj.contents[j][:(index + len(keywords))] + f"{v['ver_main']}"
+						obj.contents[j] = obj.contents[j][:(index + len(keywords))] + f"{P[0]['ver_main']}"
 						print('    ' + obj.contents[j])
 						print('')
 						break
 					elif keywords == find_Build_Month:
-						obj.contents[j] = obj.contents[j][:(index + len(keywords))] + f"{v['month']}"
+						obj.contents[j] = obj.contents[j][:(index + len(keywords))] + f"{P[0]['month']}"
 						print('    ' + obj.contents[j])
 						break
 					elif keywords == find_Build_Day:
-						obj.contents[j] = obj.contents[j][:(index + len(keywords))] + f"{v['day']}"
+						obj.contents[j] = obj.contents[j][:(index + len(keywords))] + f"{P[0]['day']}"
 						print('    ' + obj.contents[j])
 						break
 					elif keywords == find_Build_Year:
-						obj.contents[j] = obj.contents[j][:(index + len(keywords))] + f"{v['year'][-2:]}"
+						obj.contents[j] = obj.contents[j][:(index + len(keywords))] + f"{P[0]['year'][-2:]}"
 						print('    ' + obj.contents[j])
 						break
 				except ValueError:
@@ -265,15 +267,15 @@ def find_keywords_n_edit_BV(obj, keywords, Platform):
 		else :
 			i += 1
 		if i == obj.row :
-			print(f"Didn't find {keywords} in {Last_ver_DellBiosVersion}")
-	return obj.contents
+			print(f"[X] Didn't find {keywords} in {Last_ver_DellBiosVersion}")
+	# return obj.contents
 
 
 def find_keywords_n_edit_DM(obj, keywords, Platform, DebugMenuONOFF):
 	index = 0
 	i = 0
 	while i < obj.row:
-		if obj.contents[i].find(f'{Platform}') != -1:
+		if obj.contents[i].find(Platform) != -1:
 			j = i
 			while j < i + 5:
 				try:				
@@ -295,15 +297,8 @@ def find_keywords_n_edit_DM(obj, keywords, Platform, DebugMenuONOFF):
 		else :
 			i += 1
 		if i == obj.row :
-			print(f"Didn't find {keywords} in {Last_ver_PlatformConfig}")
+			print(f"[X] Didn't find {keywords} in {Last_ver_PlatformConfig}")
 	return obj.contents
-
-
-# path_LVRN = 
-path_BV   = v['repo_dell'] + 'DellPkgs/DellPlatformPkgs/' + f"Dell{v['codename']}Pkg/Include/" + Last_ver_DellBiosVersion
-path_PC   = v['repo_dell'] + 'DellPkgs/DellPlatformPkgs/' + f"Dell{v['codename']}Pkg/" + Last_ver_PlatformConfig
-
-
 
 def create_RN(file, keywords):
 	[get_contents, get_row] = Read_last_version_File(file)
@@ -318,34 +313,36 @@ def create_RN(file, keywords):
 	return obj
 
 
-def edit_BV(file, keywords):
-	if os.path.isfile(path_BV):
-		print(f"get {path_BV}")
-	else:
-		print(f"did not get {path_BV}")
+def edit_BV(keywords):
+	path_BV   = P[0]['repo_dell'] + 'DellPkgs/DellPlatformPkgs/' + f"Dell{P[0]['codename']}Pkg/Include/" + Last_ver_DellBiosVersion
 
-	[get_contents, get_row] = Read_last_version_File(file)
+	if os.path.isfile(path_BV):
+		print(f"[O] Find the file : {path_BV}")
+	else:
+		print(f"[X] Did not find : {path_BV}")
+
+	[get_contents, get_row] = Read_last_version_File(path_BV)
 	obj = File_Data(get_contents, get_row)
 
 	for each_keywords in keywords :
-		new_contents = find_keywords_n_edit_BV(obj, each_keywords, keyword_Platform)
+		find_keywords_n_edit_BV(obj, each_keywords, keyword_Platform)
 
-	Create_this_version(obj, file)
+	# Create_this_version(obj, path_BV)
 
-def edit_PC(file, keywords):
+def edit_PC(keywords):
+	path_PC   = P[0]['repo_dell'] + 'DellPkgs/DellPlatformPkgs/' + f"Dell{P[0]['codename']}Pkg/" + Last_ver_PlatformConfig
+
 	if os.path.isfile(path_PC):
-		print(f"get {path_PC}")
+		print(f"[O] Find the file : {path_PC}")
 	else:
-		print(f"did not get {path_PC}")
+		print(f"[X] Did not find : {path_PC}")
 
-	[get_contents, get_row] = Read_last_version_File(file)
+	[get_contents, get_row] = Read_last_version_File(path_PC)
 	obj = File_Data(get_contents, get_row)
 
 	new_contents = find_keywords_n_edit_DM(obj, keywords, keyword_Platform, DebugMenuONOFF_input)
 
-	Create_this_version(obj, file)
-
-
+	Create_this_version(obj, path_PC)
 
 
 
@@ -356,60 +353,61 @@ def edit_PC(file, keywords):
 
 def build_n_release():
 	# folder_path = 'C:/BEA/edk2/gemini_foxconn/DellPkgs/DellPlatformPkgs/DellTaurusPkg/'
-	folder_path = v['repo_dell'] + 'DellPkgs/DellPlatformPkgs/' + f"Dell{v['codename']}Pkg/"
-
+	version     = f"0{P[0]['ver_major']}0{P[0]['ver_minor']}0{P[0]['ver_main']}"
+	folder_path = P[0]['repo_dell'] + 'DellPkgs/DellPlatformPkgs/' + f"Dell{P[0]['codename']}Pkg/"
 	print(folder_path + 'Makea_Arev_Release.bat')
-
-
-	version_string = f"0{v['ver_major']}0{v['ver_minor']}0{v['ver_main']}"
-
+	
 	if DebugMenu_Enable_checkbox == True :    # X rev
 		bat_file = 'Makea_Release.bat'
-		rel_cmd = ['release.bat', v['codename'],  version_string]
+		rel_cmd = ['release.bat', P[0]['codename'],  version]
 	elif DebugMenu_Enable_checkbox == False : # A-Can
 		bat_file = 'Makea_Arev_Release.bat'
-		rel_cmd = ['release.bat', v['codename'],  version_string, 'A']
+		rel_cmd = ['release.bat', P[0]['codename'],  version, 'A']
 
 	try:
-		p1 = subprocess.check_call([f"{bat_file}"], shell=True, cwd=f'{folder_path}')
+		subprocess.check_call([f"{bat_file}"], shell=True, cwd=f'{folder_path}')
 		print('ok')
 	except subprocess.CalledProcessError:
 		print('error')
 		exit(0)
 
-
-	try:
-		p2 = subprocess.check_call(['release.bat', 'R440',  '020706', 'A'], shell=True, cwd=f'{folder_path}')
-		print('[OK] release.bat for R440')
-	except subprocess.CalledProcessError:
-		print('error')
-
-	try:
-		p2 = subprocess.check_call(['release.bat', 'R740xd2',  '020706', 'A'], shell=True, cwd=f'{folder_path}')
-		print('[OK] release.bat for R740xd2')
-	except subprocess.CalledProcessError:
-		print('error')
+	for p in P: # !Cautious : Spitzer only!?
+		try:
+			subprocess.check_call(['release.bat', {p[systemname]}, {version}, 'A'], shell=True, cwd=f'{folder_path}')
+			print(f"[OK] release.bat for {p[systemname]}")
+		except subprocess.CalledProcessError:
+			print('error')
 
 
 def upload_to_svn():
-	if DebugMenu_Enable_checkbox == True :    # X rev
-		C = ''
-	elif DebugMenu_Enable_checkbox == False : # A-Can
-		C = '-C'
+	version        = f"0{P[0]['ver_major']}.0{P[0]['ver_minor']}.0{P[0]['ver_main']}"
+	t_drive_folder = f"T:/Projects/14G.TDC.projects/{P[0]['codename']}/Release/{version}{C}/{P[0]['systemname']}/"
 
 	client = pysvn.Client()
-	folder_name = f"T:/Projects/14G.TDC.projects/{v['codename']}/Release/0{v['ver_major']}.0{v['ver_minor']}.0{v['ver_main']}{C}/{v['systemname']}/"
-	file_name = f"{v['systemname']}-0{v['ver_major']}0{v['ver_minor']}0{v['ver_main']}.efi"
-	file_path = folder_name + file_name
+	file_name = f"{P[0]['systemname']}-0{P[0]['ver_major']}0{P[0]['ver_minor']}0{P[0]['ver_main']}.efi"
+	file_path = t_drive_folder + file_name
 
 	# ODM SVN (Foxconn)
-	svn_url = f"https://f2dsvn.{v['odm']}.com/svn/14G_misc/{v['codename']}/Release/BIOS/MLK/{v['ver_major']}.{v['ver_minor']}.{v['ver_main']}/{file_name}"
+	svn_url = f"https://f2dsvn.{P[0]['odm']}.com/svn/14G_misc/{P[0]['codename']}/Release/BIOS/MLK/{version}/{file_name}"
 	print(f"Get SVN path : {svn_url}")
 
 	client.import_(path = file_path,
 	               url = f'{svn_url}',
 	               log_message = 'Hi Webb, EFI file was uploaded. Please help perform POT. Thanks!')
 	print("[OK] Upload to svn. Please check it.")
+
+
+def rename_EFI_withSWB():
+	for p in P:
+		t_drive_folder = f"T:/Projects/14G.TDC.projects/{p['codename']}/Release/0{p['ver_major']}.0{p['ver_minor']}.0{p['ver_main']}{C}/{p['systemname']}/"
+
+		os.chdir(t_drive_folder)
+		new_name  = f"BIOS_{p['swb']}_EFI_{p['ver_major']}.{p['ver_minor']}.{p['ver_main']}.efi"
+		for file in os.listdir(t_drive_folder):
+		    if file.endswith(".efi"):
+		    	print(f"Found an EFI file : '{file}'")
+		    	os.rename(file, new_name)
+		    	print(f"EFI has been renamed as '{new_name}'")
 
 #
 #
@@ -424,78 +422,45 @@ def read_RN(file):
 	return obj
 
 
+def create_release_mail(*obj):
+	for p in P :
+		version = p['ver_major'] + '.' + p['ver_minor'] + '.' + p['ver_main']
 
-def create_release_mail(Title, Content, *obj):
-	Title = f"Release : BIOS, Dell Server BIOS {v['generation']}, {v['codename']} {v['subcodename']}, {v['revision']} {version} ({v['block']}), SWB#{v['softwarebundle']} (X0{v['ver_main']}-00)" 
-	print(Content)
-	print('\n')
-	print('\n')
+		Title = f"Release : BIOS, Dell Server BIOS {p['generation']}, {p['codename']} {p['subcodename']}, {p['revision']} {version} ({p['block']}), SWB#{p['swb']} (X0{p['ver_main']}-00)" 
+		Content = f"Hi all,\n\
+		\n\
+		{p['generation']} {p['codename']} {p['subcodename_systemname']} BIOS version {version} {p['revision']} ({p['block']} block) is available on Agile.\n\
+		SWB# : {p['swb']}\n\
+		{DUP_text}\n\
+		\n\
+		\n" 
+		# print(Content)
+		# Add Release note
+		if obj[0] is not None:
+			for line in obj[0].contents:
+				Content += f"{line}\n"
+		print(Content)
 
-	Content = f"Hi all,\n\
-	\n\
-	{v['generation']} {v['codename']} {v['subcodename_systemname']} BIOS version {version} {v['revision']} ({v['block']} block) is available on Agile.\n\
-	SWB# : {v['softwarebundle']}\n\
-	{DUP_text}\n\
-	\n\
-	\n" 
-	# print(Content)
-	# Add Release note
-	if obj[0] is not None:
-		for line in obj[0].contents:
-			Content += f"{line}\n"
-	print(Content)
+		olook = win32.Dispatch("outlook.application")
+		mail = olook.CreateItem(0)
+		mail.To = p['receivers']
+		mail.CC = p['cc']
+		mail.Subject = Title
+		mail.Body = Content
+		mail.Display(True)
 
-	olook = win32.Dispatch("outlook.application")
-	mail = olook.CreateItem(0)
-	mail.To = v['receivers']
-	mail.CC = v['cc']
-	mail.Subject = Title
-	mail.Body = Content
-	mail.Display(True)
-
-	return Title, Content
-
-# Release : BIOS, Dell Server BIOS Polaris, Taurus (Ice, Rosetta, Genesis) , X-Rev , 2.7.2 (JunFY21), SWB#MHV07 (X02-00)
-
-
-#
-# Generate a copy .txt file
-#
-def write_into_txt(Title, Content):
-    try:
-        file = open(f"Date_Mail_{v['codename']}_{version}.txt", 'a')
-        file.truncate(0) #clear the file
-        file.close()
-
-    except IOError:
-        file = open(f"Date_Mail_{v['codename']}_{version}.txt", 'w+')
-        file.close()
-
-    # Put the result from the list to the txt file
-    with open(f"Date_Mail_{v['codename']}_{version}.txt", 'a') as mail_copy:
-        mail_copy.writelines(f"To : {v['receivers']}")
-        mail_copy.write('\n')
-        mail_copy.writelines(f"Cc : {v['cc']}")
-        mail_copy.write('\n')
-        mail_copy.writelines(f"Title : {Title}")
-        mail_copy.write('\n')
-        mail_copy.writelines(Content)
-        mail_copy.write('\n')
-        mail_copy.write('\n')
-        mail_copy.write('----------------------------------------------------')
-        mail_copy.write('\n')
-        mail_copy.write('\n')
-        mail_copy.close()
 
 
 #
 # Create rel branch
 #
-# [ESGB-2148][Taurus] Change JunFY21 BIOS version to 02.07.04.
-
 def commit_block_branch():
-	repo.git.checkout(f"{v['working_branch']}")
-	repo.git.pull('origin', f"{v['working_branch']}")
+	path_BV = P[0]['repo_dell'] + 'DellPkgs/DellPlatformPkgs/' + f"Dell{P[0]['codename']}Pkg/Include/" + Last_ver_DellBiosVersion
+	path_PC = P[0]['repo_dell'] + 'DellPkgs/DellPlatformPkgs/' + f"Dell{P[0]['codename']}Pkg/"         + Last_ver_PlatformConfig
+	version = f"0{P[0]['ver_major']}.0{P[0]['ver_minor']}.0{P[0]['ver_main']}"
+
+	repo.git.checkout(f"{P[0]['working_branch']}")
+	repo.git.pull('origin', f"{P[0]['working_branch']}")
 
 	# Do Not commit Recovery .rom
 	# if repo.git.status().find('16MBRecoveryBios.rom') != 0 :
@@ -511,12 +476,15 @@ def commit_block_branch():
 			repo.git.add(f"{path_PC}")
 			print(f"add {path_PC} to commit")
 
-	repo.git.commit('-m', f"[ESGB-{v['esgb_number']}][{v['codename']}] Change {v['block']} BIOS version to 0{v['ver_major']}.0{v['ver_minor']}.0{v['ver_main']}.")
+	repo.git.commit('-m', f"[ESGB-{P[0]['esgb_number']}][{P[0]['codename']}] Change {P[0]['block']} BIOS version to {version}.")
+	repo.git.push('origin', f"{P[0]['working_branch']}")
 
-	repo.git.push('origin', f"{v['working_branch']}")
 
 def create_rel_branch():
-	repo.git.pull('origin', f"{v['working_branch']}")
+	Codename_lower = P[0]['codename'].lower()
+	New_rel_branch = f"rel/{Codename_lower}/{Codename_lower}_{P[0]['ver_major']}_{P[0]['ver_minor']}_{P[0]['ver_main']}"
+
+	repo.git.pull('origin', f"{P[0]['working_branch']}")
 	print(f"To create new rel branch {New_rel_branch}")
 	try:
 		b = repo.create_head(New_rel_branch)
@@ -528,6 +496,8 @@ def create_rel_branch():
 
  
 def create_rel_tag():
+	New_rel_tag = f"{P[0]['codename']}/{P[0]['ver_major']}_{P[0]['ver_minor']}_{P[0]['ver_main']}"
+
 	try:
 		print(f"To create new tag {New_rel_tag}")
 		repo.create_tag(New_rel_tag)
@@ -540,7 +510,6 @@ def create_rel_tag():
 def update_INIdata():
 	with open('readConfig_taurus.ini', 'w') as configfile:
 		config.write(configfile)
-
 
 
 
@@ -560,11 +529,17 @@ def update_INIdata():
 
 # Prepare_for_repo()
 # RN_obj = create_RN(Leading_V_RN_File_Name, RN_list_keywords)
-# edit_BV(path_BV, BV_list_keywords)
-# edit_PC(path_PC, DM_list_keywords)
+edit_BV(BV_list_keywords)
+# edit_PC(DM_list_keywords)
 # time.sleep(10)
 
-# RN_obj = read_RN(read_RN_path) # Test for Spitzer RN
+
+read_RN_path_T = f"C:/BEA/releaseTool/{P[0]['systemname']}-0{P[0]['ver_major']}0{P[0]['ver_minor']}0{P[0]['ver_main']}.txt"
+read_RN_path_S = f"C:/BEA/releaseTool/{P[1]['systemname']}-0{P[1]['ver_major']}0{P[1]['ver_minor']}0{P[1]['ver_main']}.txt"
+# print(read_RN_path_T)
+# print(read_RN_path_S)
+# RN_obj_T = read_RN(read_RN_path_T) # Test for Taurus  RN
+# RN_obj_S = read_RN(read_RN_path_S) # Test for Spitzer RN
 
 # -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
 #
@@ -573,18 +548,18 @@ def update_INIdata():
 
 # build_n_release()
 # upload_to_svn()
+# rename_EFI_withSWB()
 
 # -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
 #
 # Step 3 : Release mail, create branch & tag
 #
 
-Mail_Title = ''
-Mail_Content = ''
-# Mail_Title, Mail_Content = create_release_mail(Mail_Title, Mail_Content, RN_obj)
-# write_into_txt(Mail_Title, Mail_Content)
 
-commit_block_branch()
+# create_release_mail(RN_obj_T)
+# create_release_mail(RN_obj_S)
+
+# commit_block_branch()
 # create_rel_branch()
 # create_rel_tag()
 

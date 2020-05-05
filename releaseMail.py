@@ -132,6 +132,36 @@ def write_into_txt(Title, Content):
 # write_into_txt()
 
 
+# #
+# # Generate a copy .txt file         [Backup]
+# #
+# def write_into_txt(Title, Content):
+#     try:
+#         file = open(f"Date_Mail_{P[0]['codename']}_{version}.txt", 'a')
+#         file.truncate(0) #clear the file
+#         file.close()
+
+#     except IOError:
+#         file = open(f"Date_Mail_{P[0]['codename']}_{version}.txt", 'w+')
+#         file.close()
+
+#     # Put the result from the list to the txt file
+#     with open(f"Date_Mail_{P[0]['codename']}_{version}.txt", 'a') as mail_copy:
+#         mail_copy.writelines(f"To : {P[0]['receivers']}")
+#         mail_copy.write('\n')
+#         mail_copy.writelines(f"Cc : {P[0]['cc']}")
+#         mail_copy.write('\n')
+#         mail_copy.writelines(f"Title : {Title}")
+#         mail_copy.write('\n')
+#         mail_copy.writelines(Content)
+#         mail_copy.write('\n')
+#         mail_copy.write('\n')
+#         mail_copy.write('----------------------------------------------------')
+#         mail_copy.write('\n')
+#         mail_copy.write('\n')
+#         mail_copy.close()
+
+
 #
 # Python package to send
 #
