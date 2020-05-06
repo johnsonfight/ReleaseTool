@@ -469,7 +469,7 @@ def commit_block_branch():
 	# if repo.git.status().find('16MBRecoveryBios.rom') != 0 :
 	# 	repo.git.reset('DellPkgs/DellPlatformPkgs/DellTaurusPkg/BiosRecovery/Taurus_16MBRecoveryBios.rom')
 
-	for item in repo.index.diff('HEAD~1'):
+	for item in repo.index.diff(None):
 		# print(item.a_path)
 		if  item.a_path in path_BV:
 			repo.git.add(f"{path_BV}")
@@ -524,6 +524,13 @@ def update_INIdata():
 #  === === === === ===  == == == ==  === === === === ===  #
 #  === === === === ===  == == == ==  === === === === ===  #
 
+if os.path.isdir(P[0]['repo_dell']):
+	repo = git.Repo(P[0]['repo_dell'])
+	# r = repo.remotes.origin
+	print(f"[O] Find repo : {repo}")
+else:
+	print('[X] Did not find repo')
+
 
 # -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
 #
@@ -549,9 +556,9 @@ print(read_RN_path_S)
 # Step 2 : Fetch RN, git repo, and create code change
 #
 
-build_n_release()
-upload_to_svn()
-rename_EFI_withSWB()
+# build_n_release()
+# upload_to_svn()
+# rename_EFI_withSWB()
 
 # -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
 #
@@ -563,8 +570,8 @@ rename_EFI_withSWB()
 # create_release_mail(RN_obj_S)
 
 # commit_block_branch()
-# create_rel_branch()
-# create_rel_tag()
+create_rel_branch()
+create_rel_tag()
 
 # update_INIdata() # from GUI INPUT
 
