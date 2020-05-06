@@ -45,12 +45,12 @@ else:
 	DUP_text = DUP_NOT_Avaiable_string
 
 
-if os.path.isdir(P[0]['repo_dell']):
-	repo = git.Repo(P[0]['repo_dell'])
-	# r = repo.remotes.origin
-	print(f"[O] Find repo : {repo}")
-else:
-	print('[X] Did not find repo')
+# if os.path.isdir(P[0]['repo_dell']):
+# 	repo = git.Repo(P[0]['repo_dell'])
+# 	# r = repo.remotes.origin
+# 	print(f"[O] Find repo : {repo}")
+# else:
+# 	print('[X] Did not find repo')
 
 #
 # Files needed to be modified
@@ -86,7 +86,7 @@ find_Build_Day      = '#define DELL_BIOS_BUILD_DAY           '
 find_Build_Year     = '#define DELL_BIOS_BUILD_YEAR          '
 
 # [PlatformConfig.txt]
-find_DebugMenu_PC   = 'DEBUG_MENU_ENABLE                     = '
+find_DebugMenu_PC   = 'DEFINE DEBUG_MENU_ENABLE                     = '
 
 # Keywords for get/set code change
 RN_list_keywords = [find_Version, find_System, find_Release_Date, find_Release_By, find_SWB, find_AEP_Driver, find_Important_Note, find_Known_Issues, find_DebugMenu, find_CHANGES]
@@ -113,17 +113,19 @@ def Prepare_for_repo():
 	if os.path.isdir(P[0]['repo_dell']):
 		repo = git.Repo(P[0]['repo_dell'])
 		# r = repo.remotes.origin
-		print(f"[O]  Get repo {repo}")
+		print(f"[O] Find repo : {repo}")
 	else:
-		print(f"'[X] Did not get {repo}")
+		print('[X] Did not find repo')
 
 	repo.git.checkout(f"{P[0]['working_branch']}")
 	repo.git.pull('origin', f"{P[0]['working_branch']}")
 
 def Read_last_version_File(filename):
+	contents = []
 	contents_row = 0
 	try:
 		RN_last_ver = open(filename, "r")
+		# RN_last_ver = open(filename, "rt", encoding="utf-16")
 		# contents = RN_last_ver.read().splitlines()
 		contents = RN_last_ver.read()
 		contents = contents.rstrip("\n")
@@ -229,7 +231,7 @@ def find_keywords_n_edit_BV(obj, keywords, Platform):
 	index = 0
 	i = 0
 	while i < obj.row:
-		if obj.contents[i].find(Platform) != -1:
+		if obj.contents[i].find(f'{Platform}') != -1:
 			j = i
 			while j < i + 50:
 				try:
@@ -268,14 +270,14 @@ def find_keywords_n_edit_BV(obj, keywords, Platform):
 			i += 1
 		if i == obj.row :
 			print(f"[X] Didn't find {keywords} in {Last_ver_DellBiosVersion}")
-	# return obj.contents
+	return obj.contents
 
 
 def find_keywords_n_edit_DM(obj, keywords, Platform, DebugMenuONOFF):
 	index = 0
 	i = 0
 	while i < obj.row:
-		if obj.contents[i].find(Platform) != -1:
+		if obj.contents[i].find(f'{Platform}') != -1:
 			j = i
 			while j < i + 5:
 				try:				
@@ -325,9 +327,9 @@ def edit_BV(keywords):
 	obj = File_Data(get_contents, get_row)
 
 	for each_keywords in keywords :
-		find_keywords_n_edit_BV(obj, each_keywords, keyword_Platform)
+		new_contents = find_keywords_n_edit_BV(obj, each_keywords, keyword_Platform)
 
-	# Create_this_version(obj, path_BV)
+	Create_this_version(obj, path_BV)
 
 def edit_PC(keywords):
 	path_PC   = P[0]['repo_dell'] + 'DellPkgs/DellPlatformPkgs/' + f"Dell{P[0]['codename']}Pkg/" + Last_ver_PlatformConfig
@@ -373,14 +375,15 @@ def build_n_release():
 
 	for p in P: # !Cautious : Spitzer only!?
 		try:
-			subprocess.check_call(['release.bat', {p[systemname]}, {version}, 'A'], shell=True, cwd=f'{folder_path}')
-			print(f"[OK] release.bat for {p[systemname]}")
+			subprocess.check_call(['release.bat', {p['systemname']}, {version}, 'A'], shell=True, cwd=f'{folder_path}')
+			print(f"[OK] release.bat for {p['systemname']}")
 		except subprocess.CalledProcessError:
 			print('error')
 
 
 def upload_to_svn():
 	version        = f"0{P[0]['ver_major']}.0{P[0]['ver_minor']}.0{P[0]['ver_main']}"
+	version_svn    = f"{P[0]['ver_major']}.{P[0]['ver_minor']}.{P[0]['ver_main']}"
 	t_drive_folder = f"T:/Projects/14G.TDC.projects/{P[0]['codename']}/Release/{version}{C}/{P[0]['systemname']}/"
 
 	client = pysvn.Client()
@@ -388,7 +391,7 @@ def upload_to_svn():
 	file_path = t_drive_folder + file_name
 
 	# ODM SVN (Foxconn)
-	svn_url = f"https://f2dsvn.{P[0]['odm']}.com/svn/14G_misc/{P[0]['codename']}/Release/BIOS/MLK/{version}/{file_name}"
+	svn_url = f"https://f2dsvn.{P[0]['odm']}.com/svn/14G_misc/{P[0]['codename']}/Release/BIOS/MLK/{version_svn}/{file_name}"
 	print(f"Get SVN path : {svn_url}")
 
 	client.import_(path = file_path,
@@ -529,15 +532,15 @@ def update_INIdata():
 
 # Prepare_for_repo()
 # RN_obj = create_RN(Leading_V_RN_File_Name, RN_list_keywords)
-edit_BV(BV_list_keywords)
+# edit_BV(BV_list_keywords)
 # edit_PC(DM_list_keywords)
 # time.sleep(10)
 
 
 read_RN_path_T = f"C:/BEA/releaseTool/{P[0]['systemname']}-0{P[0]['ver_major']}0{P[0]['ver_minor']}0{P[0]['ver_main']}.txt"
 read_RN_path_S = f"C:/BEA/releaseTool/{P[1]['systemname']}-0{P[1]['ver_major']}0{P[1]['ver_minor']}0{P[1]['ver_main']}.txt"
-# print(read_RN_path_T)
-# print(read_RN_path_S)
+print(read_RN_path_T)
+print(read_RN_path_S)
 # RN_obj_T = read_RN(read_RN_path_T) # Test for Taurus  RN
 # RN_obj_S = read_RN(read_RN_path_S) # Test for Spitzer RN
 
@@ -546,9 +549,9 @@ read_RN_path_S = f"C:/BEA/releaseTool/{P[1]['systemname']}-0{P[1]['ver_major']}0
 # Step 2 : Fetch RN, git repo, and create code change
 #
 
-# build_n_release()
-# upload_to_svn()
-# rename_EFI_withSWB()
+build_n_release()
+upload_to_svn()
+rename_EFI_withSWB()
 
 # -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
 #
