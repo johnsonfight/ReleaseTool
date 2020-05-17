@@ -6,7 +6,7 @@ import subprocess
 import time
 import pysvn
 import win32com.client as win32
-
+# import const
 
 #  === === === === ===  == == == ==  === === === === ===  #
 #  === === === === ===  == == == ==  === === === === ===  #
@@ -75,6 +75,7 @@ find_Important_Note = 'Important Note:'
 find_Known_Issues   = 'Known Issues:'
 find_DebugMenu      = 'Debug Menu is '
 find_CHANGES        = 'CHANGES:'
+find_ABP            = 'All Points Bulletin (APB)'
 
 # [DellBiosVersion.h]
 keyword_Platform    = f" {P[0]['codename']} version" # hashtag
@@ -89,7 +90,7 @@ find_Build_Year     = '#define DELL_BIOS_BUILD_YEAR          '
 find_DebugMenu_PC   = 'DEFINE DEBUG_MENU_ENABLE                     = '
 
 # Keywords for get/set code change
-RN_list_keywords = [find_Version, find_System, find_Release_Date, find_Release_By, find_SWB, find_AEP_Driver, find_Important_Note, find_Known_Issues, find_DebugMenu, find_CHANGES]
+RN_list_keywords = [find_Version, find_System, find_Release_Date, find_Release_By, find_SWB, find_AEP_Driver, find_Important_Note, find_Known_Issues, find_DebugMenu, find_CHANGES, find_ABP]
 BV_list_keywords = [find_Major_ver, find_Minor_ver, find_Main_ver, find_Build_Month, find_Build_Day, find_Build_Year]
 DM_list_keywords = find_DebugMenu_PC
 
@@ -125,13 +126,15 @@ def Read_last_version_File(filename):
 	contents_row = 0
 	try:
 		RN_last_ver = open(filename, "r")
-		# RN_last_ver = open(filename, "rt", encoding="utf-16")
-		# contents = RN_last_ver.read().splitlines()
-		contents = RN_last_ver.read()
-		contents = contents.rstrip("\n")
-		contents = contents.split("\r\n")
+		contents = RN_last_ver.read().splitlines()
+
+		# RN_last_ver = open(filename, "rt", encoding="utf-16")		
+		# contents = RN_last_ver.read()
+		# contents = contents.rstrip("\n")
+		# contents = contents.split("\r\n")
 
 		contents_row = len(contents)
+		print(contents_row)
 		RN_last_ver.close()
 
 	except IOError:
@@ -142,19 +145,39 @@ def Read_last_version_File(filename):
 def Create_this_version(obj, filename):
 	# filename = f"{P[0]['codename']}-0{P[0]['ver_major']}0{P[0]['ver_minor']}0{P[0]['ver_main']}_Test.txt"
 	try:
-	    file = open(filename, 'r')
-	    file.truncate(0) #clear the file
-	    file.close()
+		print(f"Create_this_version : open {filename}")
+		file = open(filename, 'r')
+		file.truncate(0) #clear the file
+		file.close()
+		print("try")
 
 	except IOError:
 	    file = open(filename, 'w+')
+	    file.truncate(0)
 	    file.close()
+	    print("except")
 	    # logging.info(f"file has been created')
 
 	with open(filename, 'w+') as file:
 		for line in obj.contents:
 			file.write("%s\n" % line)
 		file.close()
+
+def read_existing_RN(filename):
+	contents = []
+	contents_row = 0
+	try:
+		RN_last_ver = open(filename, "r", encoding="utf-16")		
+		contents = RN_last_ver.read().splitlines()
+		contents_row = len(contents)
+		print(contents_row)
+		RN_last_ver.close()
+
+	except IOError:
+		print(f"Can not find last version of Release Note {filename}")
+
+	obj = File_Data(contents, contents_row)
+	return obj
 
 #
 #
@@ -219,6 +242,9 @@ def find_keywords_n_edit_RN_info(obj, keywords, DebugMenuONOFF):
 				print(f"\n----------------------------------------------------------------------")
 				print(f"Release Note '{This_ver_RN}' has been created. Please check it. \n")
 
+			elif keywords == find_ABP:
+				obj.contents[i].replace("#22", "#02") #*
+
 			break
 
 		except ValueError:
@@ -278,11 +304,12 @@ def find_keywords_n_edit_DM(obj, keywords, Platform, DebugMenuONOFF):
 	i = 0
 	while i < obj.row:
 		if obj.contents[i].find(f'{Platform}') != -1:
+			print(f"Found hashtag at #{i}")
 			j = i
 			while j < i + 5:
 				try:				
 					index = obj.contents[j].index(keywords)
-					if keywords == find_DebugMenu_PC:
+					if keywords is find_DebugMenu_PC:
 						print(f"\n----------------------------------------------------------------------")
 						print(f"Code change in '{Last_ver_PlatformConfig}'' : \n")
 						if DebugMenuONOFF_input is 'Enabled':
@@ -326,10 +353,12 @@ def edit_BV(keywords):
 	[get_contents, get_row] = Read_last_version_File(path_BV)
 	obj = File_Data(get_contents, get_row)
 
+	# print(obj.row)
+
 	for each_keywords in keywords :
 		new_contents = find_keywords_n_edit_BV(obj, each_keywords, keyword_Platform)
 
-	Create_this_version(obj, path_BV)
+	# Create_this_version(obj, path_BV)
 
 def edit_PC(keywords):
 	path_PC   = P[0]['repo_dell'] + 'DellPkgs/DellPlatformPkgs/' + f"Dell{P[0]['codename']}Pkg/" + Last_ver_PlatformConfig
@@ -442,7 +471,7 @@ def create_release_mail(*obj):
 		if obj[0] is not None:
 			for line in obj[0].contents:
 				Content += f"{line}\n"
-		print(Content)
+		# print(Content)
 
 		olook = win32.Dispatch("outlook.application")
 		mail = olook.CreateItem(0)
@@ -544,12 +573,14 @@ else:
 # time.sleep(10)
 
 
-read_RN_path_T = f"C:/BEA/releaseTool/{P[0]['systemname']}-0{P[0]['ver_major']}0{P[0]['ver_minor']}0{P[0]['ver_main']}.txt"
-read_RN_path_S = f"C:/BEA/releaseTool/{P[1]['systemname']}-0{P[1]['ver_major']}0{P[1]['ver_minor']}0{P[1]['ver_main']}.txt"
-print(read_RN_path_T)
-print(read_RN_path_S)
+read_RN_path_T = f"C:/BEA/releaseTool/{P[0]['systemname']}-0{P[0]['ver_major']}0{P[0]['ver_minor']}0{P[0]['ver_main']}_origin.txt"
+read_RN_path_S = f"C:/BEA/releaseTool/{P[1]['systemname']}-0{P[1]['ver_major']}0{P[1]['ver_minor']}0{P[1]['ver_main']}_origin.txt"
+# print(read_RN_path_T)
+# print(read_RN_path_S)
 # RN_obj_T = read_RN(read_RN_path_T) # Test for Taurus  RN
 # RN_obj_S = read_RN(read_RN_path_S) # Test for Spitzer RN
+RN_obj_T = read_existing_RN(read_RN_path_T)
+RN_obj_S = read_existing_RN(read_RN_path_S)
 
 # -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
 #
@@ -566,13 +597,13 @@ print(read_RN_path_S)
 #
 
 
-# create_release_mail(RN_obj_T)
+# create_release_mail(RN_obj_T, RN_obj_S)
 # create_release_mail(RN_obj_S)
 
 # commit_block_branch()
-create_rel_branch()
-create_rel_tag()
+# create_rel_branch()
+# create_rel_tag()
 
 # update_INIdata() # from GUI INPUT
 
-sys.exit(1)
+# sys.exit(1)
