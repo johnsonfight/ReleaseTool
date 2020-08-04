@@ -24,18 +24,23 @@ print("    Please check configuration info is correct.\n")
 
 PLATFORM       = ['Taurus', 'Spitzer'] #INPUT
 
-DUP_Checkbox   = True #INPUT
-DebugMenu_Enable_checkbox = False #INPUT
-if DebugMenu_Enable_checkbox == True : 
-	DebugMenuONOFF_input = 'Enabled'   # X rev
-	C = ''
-elif DebugMenu_Enable_checkbox == False :
-	DebugMenuONOFF_input = 'Disabled'  # A-Can
-	C = '-C'
-
 P = []
 for i in PLATFORM:
 	P.append(dict(config.items(i)))
+
+version        = f"0{P[0]['ver_major']}.0{P[0]['ver_minor']}.0{P[0]['ver_main']}"
+version_svn    = f"{P[0]['ver_major']}.{P[0]['ver_minor']}.{P[0]['ver_main']}"
+DUP_Checkbox   = True #INPUT
+DebugMenu_Enable_checkbox = True #INPUT
+if DebugMenu_Enable_checkbox == True : 
+	DebugMenuONOFF_input = 'Enabled'   # X rev
+	C = ''
+	t_drive_folder = f"T:/Projects/14G.TDC.projects/{P[0]['codename']}/Release/{version}{C}/"
+elif DebugMenu_Enable_checkbox == False :
+	DebugMenuONOFF_input = 'Disabled'  # A-Can
+	C = '-C'
+	t_drive_folder = f"T:/Projects/14G.TDC.projects/{P[0]['codename']}/Release/{version}{C}/{P[0]['systemname']}/"
+
 
 DUP_Available_string    = 'DUPs are available on Agile.'
 DUP_NOT_Avaiable_string = 'DUPs are NOT available on Agile.'
@@ -419,37 +424,35 @@ class Functions:
 
 	def build_n_release(self):
 		# folder_path = 'C:/BEA/edk2/gemini_foxconn/DellPkgs/DellPlatformPkgs/DellTaurusPkg/'
-		version     = f"0{P[0]['ver_major']}0{P[0]['ver_minor']}0{P[0]['ver_main']}"
+		# version     = f"0{P[0]['ver_major']}0{P[0]['ver_minor']}0{P[0]['ver_main']}"
 		folder_path = P[0]['repo_dell'] + 'DellPkgs/DellPlatformPkgs/' + f"Dell{P[0]['codename']}Pkg/"
-		print(folder_path + 'Makea_Arev_Release.bat')
+		# print(folder_path + 'Makea_Arev_Release.bat')
 		
-		if DebugMenu_Enable_checkbox == True :    # X rev
-			bat_file = 'Makea_Release.bat'
-			rel_cmd = ['release.bat', P[0]['codename'],  version]
-		elif DebugMenu_Enable_checkbox == False : # A-Can
-			bat_file = 'Makea_Arev_Release.bat'
-			rel_cmd = ['release.bat', P[0]['codename'],  version, 'A']
 
-		try:
-			subprocess.check_call([f"{bat_file}"], shell=True, cwd=f'{folder_path}')
-			print('ok')
-		except subprocess.CalledProcessError:
-			print('error')
-			exit(0)
+		# try:
+			# if DebugMenu_Enable_checkbox == True :    # X rev
+			# 	bat_file = 'Makea_Release.bat'
+			# elif DebugMenu_Enable_checkbox == False : # A-Can
+			# 	bat_file = 'Makea_Arev_Release.bat'
+		# 	subprocess.check_call(f"{bat_file}", shell=True, cwd=f'{folder_path}')
+		# 	print('ok')
+		# except subprocess.CalledProcessError:
+		# 	print('error')
+		# 	exit(0)
 
 		for p in P: # !Cautious : Spitzer only!?
 			try:
-				subprocess.check_call(['release.bat', {p['systemname']}, {version}, 'A'], shell=True, cwd=f'{folder_path}')
+				if DebugMenu_Enable_checkbox == True :    # X rev
+					rel_cmd = 'release.bat' + f" {p['systemname']}" + f" {version}"
+				elif DebugMenu_Enable_checkbox == False : # A-Can
+					rel_cmd = 'release.bat' + f" {p['systemname']}" + f" {version}" + ' A'
+				print(f"Run cmd : {rel_cmd}")
+				subprocess.check_call(f"{rel_cmd}", shell=True, cwd=f'{folder_path}')
 				print(f"[OK] release.bat for {p['systemname']}")
 			except subprocess.CalledProcessError:
 				print('error')
 
-
 	def upload_to_svn(self):
-		version        = f"0{P[0]['ver_major']}.0{P[0]['ver_minor']}.0{P[0]['ver_main']}"
-		version_svn    = f"{P[0]['ver_major']}.{P[0]['ver_minor']}.{P[0]['ver_main']}"
-		t_drive_folder = f"T:/Projects/14G.TDC.projects/{P[0]['codename']}/Release/{version}{C}/{P[0]['systemname']}/"
-
 		client = pysvn.Client()
 		file_name = f"{P[0]['systemname']}-0{P[0]['ver_major']}0{P[0]['ver_minor']}0{P[0]['ver_main']}.efi"
 		file_path = t_drive_folder + file_name
@@ -466,8 +469,6 @@ class Functions:
 
 	def rename_EFI_withSWB(self):
 		for p in P:
-			t_drive_folder = f"T:/Projects/14G.TDC.projects/{p['codename']}/Release/0{p['ver_major']}.0{p['ver_minor']}.0{p['ver_main']}{C}/{p['systemname']}/"
-
 			os.chdir(t_drive_folder)
 			new_name  = f"BIOS_{p['swb']}_EFI_{p['ver_major']}.{p['ver_minor']}.{p['ver_main']}.efi"
 			for file in os.listdir(t_drive_folder):
@@ -550,6 +551,9 @@ class Functions:
 
 
 	def create_rel_branch(self):
+		if repo.active_branch.name != P[0]['working_branch']:
+			repo.git.checkout(f"{P[0]['working_branch']}")
+			
 		Codename_lower = P[0]['codename'].lower()
 		New_rel_branch = f"rel/{Codename_lower}/{Codename_lower}_{P[0]['ver_major']}_{P[0]['ver_minor']}_{P[0]['ver_main']}"
 
@@ -566,6 +570,7 @@ class Functions:
 
 	 
 	def create_rel_tag(self):
+		# print(repo.active_branch.name)
 		New_rel_tag = f"{P[0]['codename']}/{P[0]['ver_major']}_{P[0]['ver_minor']}_{P[0]['ver_main']}"
 
 		try:
@@ -625,7 +630,7 @@ if os.path.isdir(P[0]['repo_dell']):
 	print(f"Working on branch {P[0]['working_branch']}")
 else:
 	print('[X] Did not find repo')
-# f.Prepare_for_repo()
+f.Prepare_for_repo()
 # RN_obj = f.create_RN(Leading_V_RN_File_Name, RN_list_keywords)
 # f.edit_BV(BV_list_keywords)
 # f.edit_PC(DM_list_keywords)
