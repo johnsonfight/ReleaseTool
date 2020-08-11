@@ -29,17 +29,25 @@ for i in PLATFORM:
 	P.append(dict(config.items(i)))
 
 version        = f"0{P[0]['ver_major']}.0{P[0]['ver_minor']}.0{P[0]['ver_main']}"
+version_cmd    = f"0{P[0]['ver_major']}0{P[0]['ver_minor']}0{P[0]['ver_main']}"
 version_svn    = f"{P[0]['ver_major']}.{P[0]['ver_minor']}.{P[0]['ver_main']}"
+Codename_lower = P[0]['codename'].lower()
+New_rel_branch = f"rel/{Codename_lower}/{Codename_lower}_{P[0]['ver_major']}_{P[0]['ver_minor']}_{P[0]['ver_main']}"
+New_rel_tag = f"{P[0]['codename']}/{P[0]['ver_major']}_{P[0]['ver_minor']}_{P[0]['ver_main']}"
 DUP_Checkbox   = True #INPUT
 DebugMenu_Enable_checkbox = True #INPUT
 if DebugMenu_Enable_checkbox == True : 
 	DebugMenuONOFF_input = 'Enabled'   # X rev
 	C = ''
 	t_drive_folder = f"T:/Projects/14G.TDC.projects/{P[0]['codename']}/Release/{version}{C}/"
+	t_drive_folder_2 = f"T:/Projects/14G.TDC.projects/{P[1]['codename']}/Release/{version}{C}/"
+
 elif DebugMenu_Enable_checkbox == False :
 	DebugMenuONOFF_input = 'Disabled'  # A-Can
 	C = '-C'
 	t_drive_folder = f"T:/Projects/14G.TDC.projects/{P[0]['codename']}/Release/{version}{C}/{P[0]['systemname']}/"
+	t_drive_folder_2 = f"T:/Projects/14G.TDC.projects/{P[1]['codename']}/Release/{version}{C}/{P[1]['systemname']}/"
+
 
 
 DUP_Available_string    = 'DUPs are available on Agile.'
@@ -140,7 +148,7 @@ class Functions:
 			# contents = contents.split("\r\n")
 
 			contents_row = len(contents)
-			print(contents_row)
+			print(f"[O] Read file, total row : '{contents_row}'")
 			RN_last_ver.close()
 
 		except IOError:
@@ -173,11 +181,10 @@ class Functions:
 		contents = []
 		contents_row = 0
 		try:
-			RN_last_ver = open(filename, "r", encoding="ISO-8859-1")		
+			RN_last_ver = open(filename, "r", encoding="UTF-8")	
 			contents = RN_last_ver.read().splitlines()
 			contents_row = len(contents)
-			print("contents_row : ")
-			print(contents_row)
+			print(f"Get RN, total row : '{contents_row}'")
 			RN_last_ver.close()
 
 		except IOError:
@@ -423,29 +430,26 @@ class Functions:
 
 
 	def build_n_release(self):
-		# folder_path = 'C:/BEA/edk2/gemini_foxconn/DellPkgs/DellPlatformPkgs/DellTaurusPkg/'
-		# version     = f"0{P[0]['ver_major']}0{P[0]['ver_minor']}0{P[0]['ver_main']}"
 		folder_path = P[0]['repo_dell'] + 'DellPkgs/DellPlatformPkgs/' + f"Dell{P[0]['codename']}Pkg/"
 		# print(folder_path + 'Makea_Arev_Release.bat')
 		
-
-		# try:
-			# if DebugMenu_Enable_checkbox == True :    # X rev
-			# 	bat_file = 'Makea_Release.bat'
-			# elif DebugMenu_Enable_checkbox == False : # A-Can
-			# 	bat_file = 'Makea_Arev_Release.bat'
-		# 	subprocess.check_call(f"{bat_file}", shell=True, cwd=f'{folder_path}')
-		# 	print('ok')
-		# except subprocess.CalledProcessError:
-		# 	print('error')
-		# 	exit(0)
+		try:
+			if DebugMenu_Enable_checkbox == True :    # X rev
+				bat_file = 'Makea_Release.bat'
+			elif DebugMenu_Enable_checkbox == False : # A-Can
+				bat_file = 'Makea_Arev_Release.bat'
+			subprocess.check_call(f"{bat_file}", shell=True, cwd=f'{folder_path}')
+			print('ok')
+		except subprocess.CalledProcessError:
+			print('error')
+			exit(0)
 
 		for p in P: # !Cautious : Spitzer only!?
 			try:
 				if DebugMenu_Enable_checkbox == True :    # X rev
-					rel_cmd = 'release.bat' + f" {p['systemname']}" + f" {version}"
+					rel_cmd = 'release.bat' + f" {p['systemname']}" + f" {version_cmd}"
 				elif DebugMenu_Enable_checkbox == False : # A-Can
-					rel_cmd = 'release.bat' + f" {p['systemname']}" + f" {version}" + ' A'
+					rel_cmd = 'release.bat' + f" {p['systemname']}" + f" {version_cmd}" + ' A'
 				print(f"Run cmd : {rel_cmd}")
 				subprocess.check_call(f"{rel_cmd}", shell=True, cwd=f'{folder_path}')
 				print(f"[OK] release.bat for {p['systemname']}")
@@ -483,11 +487,18 @@ class Functions:
 	#
 	#
 
-	def read_RN(self, file):
-		[get_contents, get_row] = self.Read_last_version_File(file)
-		obj = File_Data(get_contents, get_row)
+    # *Change this function to "Push branch & tag"
+	def push_branch_tag(self):
+		# [get_contents, get_row] = self.Read_last_version_File(file)
+		# obj = File_Data(get_contents, get_row)
 
-		return obj
+		# return obj
+
+
+		repo.git.push('origin', f"{P[0]['working_branch']}")
+		repo.git.push('origin', f"{New_rel_branch}")
+		repo.git.push('origin', f"{New_rel_tag}")
+		print(f"[OK] Push {P[0]['working_branch']}, {New_rel_branch}, {New_rel_tag}")
 
 
 	def create_release_mail(self, obj):
@@ -503,7 +514,8 @@ class Functions:
 			{DUP_text}\n\
 			\n\
 			\n" 
-			# print(Content)
+			# print(obj[0].contents)
+
 			# Add Release note
 			if bool(obj) is not False:
 				if obj[i] is not None:
@@ -547,15 +559,12 @@ class Functions:
 				print(f"add {path_PC} to commit")
 
 		repo.git.commit('-m', f"[ESGB-{P[0]['esgb_number']}][{P[0]['codename']}] Change {P[0]['block']} BIOS version to {version}.")
-		repo.git.push('origin', f"{P[0]['working_branch']}")
+		# repo.git.push('origin', f"{P[0]['working_branch']}")
 
 
 	def create_rel_branch(self):
 		if repo.active_branch.name != P[0]['working_branch']:
 			repo.git.checkout(f"{P[0]['working_branch']}")
-			
-		Codename_lower = P[0]['codename'].lower()
-		New_rel_branch = f"rel/{Codename_lower}/{Codename_lower}_{P[0]['ver_major']}_{P[0]['ver_minor']}_{P[0]['ver_main']}"
 
 		repo.git.pull('origin', f"{P[0]['working_branch']}")
 		print(f"To create new rel branch {New_rel_branch}")
@@ -565,13 +574,12 @@ class Functions:
 			print(f"branch {New_rel_branch} already exists")
 
 		b.checkout()
-		repo.git.push('origin', f"{P[0]['working_branch']}")
-		repo.git.push('origin', f"{New_rel_branch}")
+		# repo.git.push('origin', f"{P[0]['working_branch']}")
+		# repo.git.push('origin', f"{New_rel_branch}")
 
 	 
 	def create_rel_tag(self):
 		# print(repo.active_branch.name)
-		New_rel_tag = f"{P[0]['codename']}/{P[0]['ver_major']}_{P[0]['ver_minor']}_{P[0]['ver_main']}"
 
 		try:
 			print(f"To create new tag {New_rel_tag}")
@@ -579,7 +587,7 @@ class Functions:
 		except git.exc.GitCommandError:
 			print(f"tag {New_rel_tag} already exists")
 
-		repo.git.push('origin', f"{New_rel_tag}")
+		# repo.git.push('origin', f"{New_rel_tag}")
 
 
 	def update_INIdata(self):
@@ -636,15 +644,13 @@ f.Prepare_for_repo()
 # f.edit_PC(DM_list_keywords)
 # time.sleep(10)
 
-
-read_RN_path_T = f"C:/BEA/releaseTool/{P[0]['systemname']}-0{P[0]['ver_major']}0{P[0]['ver_minor']}0{P[0]['ver_main']}_read.txt"
-read_RN_path_S = f"C:/BEA/releaseTool/{P[1]['systemname']}-0{P[1]['ver_major']}0{P[1]['ver_minor']}0{P[1]['ver_main']}_read.txt"
+read_RN_path_T = t_drive_folder   + f"{P[0]['systemname']}-0{P[0]['ver_major']}0{P[0]['ver_minor']}0{P[0]['ver_main']}.txt"
+read_RN_path_S = t_drive_folder_2 + f"{P[1]['systemname']}-0{P[1]['ver_major']}0{P[1]['ver_minor']}0{P[1]['ver_main']}.txt"
 # print(read_RN_path_T)
 # print(read_RN_path_S)
-RN_obj_T = f.read_RN(read_RN_path_T) # Test for Taurus  RN
-RN_obj_S = f.read_RN(read_RN_path_S) # Test for Spitzer RN
-# RN_obj_T = f.read_existing_RN(read_RN_path_T)
-# RN_obj_S = f.read_existing_RN(read_RN_path_S)
+
+RN_obj_T = f.read_existing_RN(read_RN_path_T)
+RN_obj_S = f.read_existing_RN(read_RN_path_S)
 RN_Read = [RN_obj_T, RN_obj_S]
 
 # f.scan_CPI()
