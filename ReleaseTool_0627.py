@@ -23,9 +23,6 @@ class Ui_MainWindow(object):
             pass
         if self.CB_ScanCPI.isChecked():
             f.scan_CPI()
-            pass
-        if self.CB_InternalRN.isChecked():
-            RN_obj = f.create_RN(Leading_V_RN_File_Name, RN_list_keywords)
 
     def Run_Button2(self):
         if self.CB_RunBatch.isChecked():
@@ -38,11 +35,15 @@ class Ui_MainWindow(object):
             f.rename_EFI_withSWB()
 
     def Run_Button3(self):
-        if self.CB_pushBranchTag.isChecked():
-            f.push_branch_tag()
+        RN_obj_all = []
+        if self.CB_ReadRN.isChecked():
+            for i in range(num_platform):
+                RN_obj = f.read_existing_RN(read_RN[i], i)
+                RN_obj_all.append(RN_obj)
             pass
         if self.CB_CreateMail.isChecked():
-            f.create_release_mail(RN_Read)
+            for i in range(num_platform):
+                f.create_release_mail(RN_obj_all[i], i)
             pass
         if self.CB_Branch.isChecked():
             f.commit_block_branch()
@@ -50,6 +51,10 @@ class Ui_MainWindow(object):
             pass
         if self.CB_Tag.isChecked():
             f.create_rel_tag()
+            pass
+        if self.CB_pushBranchTag.isChecked():
+            f.push_branch_tag()
+            
 
 
     def setupUi(self, MainWindow):
@@ -76,16 +81,16 @@ class Ui_MainWindow(object):
         self.label_4.setFont(font)
         self.label_4.setAlignment(QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter)
         self.label_4.setObjectName("label_4")
-        self.CB_InternalRN = QtWidgets.QCheckBox(self.centralwidget)
-        self.CB_InternalRN.setGeometry(QtCore.QRect(40, 280, 221, 20))
+        self.CB_ReadRN = QtWidgets.QCheckBox(self.centralwidget)
+        self.CB_ReadRN.setGeometry(QtCore.QRect(840, 160, 221, 20))
         font = QtGui.QFont()
         font.setPointSize(12)
-        self.CB_InternalRN.setFont(font)
-        self.CB_InternalRN.setIconSize(QtCore.QSize(24, 24))
-        self.CB_InternalRN.setChecked(True)
-        self.CB_InternalRN.setObjectName("CB_InternalRN")
+        self.CB_ReadRN.setFont(font)
+        self.CB_ReadRN.setIconSize(QtCore.QSize(24, 24))
+        self.CB_ReadRN.setChecked(True)
+        self.CB_ReadRN.setObjectName("CB_ReadRN")
         self.CB_Tag = QtWidgets.QCheckBox(self.centralwidget)
-        self.CB_Tag.setGeometry(QtCore.QRect(840, 240, 241, 20))
+        self.CB_Tag.setGeometry(QtCore.QRect(840, 280, 241, 20))
         font = QtGui.QFont()
         font.setPointSize(12)
         self.CB_Tag.setFont(font)
@@ -93,7 +98,7 @@ class Ui_MainWindow(object):
         self.CB_Tag.setChecked(True)
         self.CB_Tag.setObjectName("CB_Tag")
         self.CB_CreateMail = QtWidgets.QCheckBox(self.centralwidget)
-        self.CB_CreateMail.setGeometry(QtCore.QRect(840, 160, 261, 20))
+        self.CB_CreateMail.setGeometry(QtCore.QRect(840, 200, 261, 20))
         font = QtGui.QFont()
         font.setPointSize(12)
         self.CB_CreateMail.setFont(font)
@@ -116,13 +121,6 @@ class Ui_MainWindow(object):
         self.CB_DellBiosVersion.setIconSize(QtCore.QSize(24, 24))
         self.CB_DellBiosVersion.setChecked(True)
         self.CB_DellBiosVersion.setObjectName("CB_DellBiosVersion")
-        self.btn_Run3 = QtWidgets.QPushButton(self.centralwidget)
-        self.btn_Run3.setGeometry(QtCore.QRect(840, 320, 112, 34))
-        font = QtGui.QFont()
-        font.setPointSize(12)
-        self.btn_Run3.setFont(font)
-        self.btn_Run3.setObjectName("btn_Run3")
-        self.btn_Run3.clicked.connect(self.Run_Button3)
         self.CB_Rename = QtWidgets.QCheckBox(self.centralwidget)
         self.CB_Rename.setGeometry(QtCore.QRect(450, 240, 271, 20))
         font = QtGui.QFont()
@@ -154,7 +152,7 @@ class Ui_MainWindow(object):
         self.label_6.setAlignment(QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter)
         self.label_6.setObjectName("label_6")
         self.CB_Branch = QtWidgets.QCheckBox(self.centralwidget)
-        self.CB_Branch.setGeometry(QtCore.QRect(840, 200, 241, 20))
+        self.CB_Branch.setGeometry(QtCore.QRect(840, 240, 241, 20))
         font = QtGui.QFont()
         font.setPointSize(12)
         self.CB_Branch.setFont(font)
@@ -169,22 +167,29 @@ class Ui_MainWindow(object):
         self.CB_PlatformConfig.setIconSize(QtCore.QSize(24, 24))
         self.CB_PlatformConfig.setChecked(True)
         self.CB_PlatformConfig.setObjectName("CB_PlatformConfig")
-        self.btn_Run2 = QtWidgets.QPushButton(self.centralwidget)
-        self.btn_Run2.setGeometry(QtCore.QRect(450, 320, 112, 34))
-        font = QtGui.QFont()
-        font.setPointSize(12)
-        self.btn_Run2.setFont(font)
-        self.btn_Run2.setObjectName("btn_Run2")
-        self.btn_Run2.clicked.connect(self.Run_Button2)
         self.btn_Run1 = QtWidgets.QPushButton(self.centralwidget)
-        self.btn_Run1.setGeometry(QtCore.QRect(40, 320, 112, 34))
+        self.btn_Run1.setGeometry(QtCore.QRect(40, 280, 112, 34))
         font = QtGui.QFont()
         font.setPointSize(12)
         self.btn_Run1.setFont(font)
         self.btn_Run1.setObjectName("btn_Run1")
         self.btn_Run1.clicked.connect(self.Run_Button1)
+        self.btn_Run2 = QtWidgets.QPushButton(self.centralwidget)
+        self.btn_Run2.setGeometry(QtCore.QRect(450, 280, 112, 34))
+        font = QtGui.QFont()
+        font.setPointSize(12)
+        self.btn_Run2.setFont(font)
+        self.btn_Run2.setObjectName("btn_Run2")
+        self.btn_Run2.clicked.connect(self.Run_Button2)
+        self.btn_Run3 = QtWidgets.QPushButton(self.centralwidget)
+        self.btn_Run3.setGeometry(QtCore.QRect(840, 370, 112, 34))
+        font = QtGui.QFont()
+        font.setPointSize(12)
+        self.btn_Run3.setFont(font)
+        self.btn_Run3.setObjectName("btn_Run3")
+        self.btn_Run3.clicked.connect(self.Run_Button3)
         self.CB_pushBranchTag = QtWidgets.QCheckBox(self.centralwidget)
-        self.CB_pushBranchTag.setGeometry(QtCore.QRect(840, 270, 171, 41))
+        self.CB_pushBranchTag.setGeometry(QtCore.QRect(840, 320, 171, 20))
         font = QtGui.QFont()
         font.setPointSize(12)
         self.CB_pushBranchTag.setFont(font)
@@ -210,11 +215,11 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
-        self.label_2.setText(_translate("MainWindow", "Step 0 : Make sure data in readConfig_all.ini is correct."))
+        self.label_2.setText(_translate("MainWindow", "Step 0 : Make sure data in config data (.ini) is correct."))
         self.label_4.setText(_translate("MainWindow", "Step 1 : Create Code Change"))
         self.label_5.setText(_translate("MainWindow", "Step 2 : Build EFI to POT"))
         self.label_6.setText(_translate("MainWindow", "Step 3 : Create mail, rel/ branch, tag"))
-        self.CB_InternalRN.setText(_translate("MainWindow", "*Internal RN"))
+        self.CB_ReadRN.setText(_translate("MainWindow", "Read RN"))
         self.CB_Tag.setText(_translate("MainWindow", "Create tag"))
         self.CB_CreateMail.setText(_translate("MainWindow", "Create mail"))
         self.CB_RunBatch.setText(_translate("MainWindow", "Run Makea and Release Batch"))
