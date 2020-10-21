@@ -15,15 +15,19 @@ init()
 #  === === === === ===  == == == ==  === === === === ===  #
 
 config = configparser.ConfigParser()
-config_file = 'readConfig_Sep.ini' # _INPUT_
-config.read(config_file)           # _INPUT_
-PLATFORM = ['Taurus', 'Spitzer']   # _INPUT_
+config_file = f'{sys.argv[1]}'
+# print(os.getcwd() + "\\" + config_file)
+if os.path.isfile(f'./{config_file}'):
+	config.read(config_file)
+else:
+	print(f"{config_file} file is not exist.")
+	exit(1)
 DUP_Checkbox   = False             # _INPUT_
-num_platform = len(PLATFORM)
+num_platform = len(config.sections())
 print(Fore.GREEN + f"[O] Read configuartion from '{config_file}'. Please double check configuration is correct." + Style.RESET_ALL)
 
 P = []
-for i in PLATFORM:
+for i in config.sections():
 	P.append(dict(config.items(i)))
 
 version        = f"0{P[0]['ver_major']}.0{P[0]['ver_minor']}.0{P[0]['ver_main']}"
@@ -37,15 +41,15 @@ DebugMenu_Enable_checkbox = None
 t_drive_folder = [''] * num_platform
 read_RN        = [''] * num_platform
 
-if P[0]['revision'] == 'X rev':
-	print(Fore.YELLOW + '[!] This is X rev' + Style.RESET_ALL)
+if P[0]['revision'] == 'X-rev':
+	print(Fore.YELLOW + '[!] This is X-rev' + Style.RESET_ALL)
 	DebugMenu_Enable_checkbox = True 
 
 elif P[0]['revision'] == 'A-can':
 	print(Fore.YELLOW + '[!] This is A-can' + Style.RESET_ALL)
 	DebugMenu_Enable_checkbox = False 
 
-if DebugMenu_Enable_checkbox == True : # X rev
+if DebugMenu_Enable_checkbox == True : # X-rev
 	DebugMenuONOFF = 'Enabled'
 	C = ''
 	for i in range(num_platform):
@@ -403,20 +407,19 @@ class Functions:
 				if file.find("DellPkgs/DellPlatformPkgs/DellAtlasPkg") != -1:
 					if file.find("DellPkgs/DellPlatformPkgs/DellAtlasPkg/Include/DellBiosVersion.h") == -1:
 						print(f"\n---------------------------------------------")
-						print(f"Got CPI : " + f"{file}")
 						print(f"    Path : " + f"{file}")
 						print(f"    Author : {commit.author}")
 						print(f"    Date and time : {commit.authored_datetime}")
 						print(f"    SHA number : {commit}")
 						print(f"---------------------------------------------")
-						print(f"    Please check whether it's neccessary CPI or not.\n")
-						print(f"    If yes, please get the CPI to your platform MAUALLY.\n")
 						cpi_num += 1
 
 		if cpi_num is 0:
 			print("[O] Found no CPI.\n")
 		else :
-			print(f"[O] Found {cpi_num} CPI.\n")
+			print(f"[O] Found {cpi_num} suspicious CPI.\n")
+			print(f"    Please check whether these are neccessary CPI or not.\n")
+			print(f"    If yes, please get the CPI to your platform MAUALLY.\n")
 
 
 		#
@@ -443,7 +446,7 @@ class Functions:
 		# print(folder_path + 'Makea_Arev_Release.bat')
 		
 		try:
-			if DebugMenu_Enable_checkbox == True :    # X rev
+			if DebugMenu_Enable_checkbox == True :    # X-rev
 				bat_file = 'Makea_Release.bat'
 			elif DebugMenu_Enable_checkbox == False : # A-Can
 				bat_file = 'Makea_Arev_Release.bat'
@@ -459,7 +462,7 @@ class Functions:
 
 		for index in range(num_platform): # !Cautious : Spitzer only!?
 			try:
-				if DebugMenu_Enable_checkbox == True :    # X rev
+				if DebugMenu_Enable_checkbox == True :    # X-rev
 					rel_cmd = 'release.bat' + f" {P[index]['systemname']}" + f" {version_cmd}"
 				elif DebugMenu_Enable_checkbox == False : # A-Can
 					rel_cmd = 'release.bat' + f" {P[index]['systemname']}" + f" {version_cmd}" + ' A'
