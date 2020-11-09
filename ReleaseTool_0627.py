@@ -16,46 +16,49 @@ class Ui_MainWindow(object):
     f = Functions()
 
     def Run_Button1(self):
-        if self.CB_DellBiosVersion.isChecked():
-            f.edit_BV(BV_list_keywords)
-            pass
-        if self.CB_PlatformConfig.isChecked():
-            f.edit_PC(DM_list_keywords)
-            pass
-        if self.CB_ScanCPI.isChecked():
-            f.scan_CPI()
+        for p in bulidQueue:
+            if self.CB_DellBiosVersion.isChecked():
+                f.edit_BV(p, BV_list_keywords)
+                pass
+            if self.CB_PlatformConfig.isChecked():
+                f.edit_PC(p, DM_list_keywords)
+                pass
+            if self.CB_ScanCPI.isChecked():
+                f.scan_CPI(p)
+                pass
+            if self.CB_Branch_Tag.isChecked():
+                f.commit_block_branch(p)
+                f.create_rel_branch(p)
+                f.create_rel_tag(p) 
+        f.check_before_POT()
+
 
     def Run_Button2(self):
-        if self.CB_RunBatch.isChecked():
-            f.build_n_release()
-            pass
-        if self.CB_ToSVN.isChecked():
-            f.upload_to_svn()
-            pass
-        if self.CB_Rename.isChecked():
-            f.rename_EFI_withSWB()
+        # print(bulidQueue)
+        for p in bulidQueue:
+            if self.CB_pushBranchTag.isChecked():
+                f.push_branch_tag(p)
+                pass
+            if self.CB_RunBatch.isChecked():
+                f.build_n_release(p)
+                pass
+            if self.CB_ToSVN.isChecked():
+                f.upload_to_svn(p)
+                # pass
+            # if self.CB_Rename.isChecked():
+            #     f.rename_EFI_withSWB()
 
     def Run_Button3(self):
-        RN_obj_all = []
-        if self.CB_ReadRN.isChecked():
-            for i in range(num_platform):
-                RN_obj = f.read_existing_RN(read_RN[i], i)
-                RN_obj_all.append(RN_obj)
-            pass
-        if self.CB_CreateMail.isChecked():
-            for i in range(num_platform):
-                f.create_release_mail(RN_obj_all[i], i)
-            pass
-        if self.CB_Branch.isChecked():
-            f.commit_block_branch()
-            f.create_rel_branch()
-            pass
-        if self.CB_Tag.isChecked():
-            f.create_rel_tag()
-            pass
-        if self.CB_pushBranchTag.isChecked():
-            f.push_branch_tag()
-            
+        for p in bulidQueue:
+            RN_obj_all = []
+            if self.CB_ReadRN.isChecked():
+                for i in range(num_platform):
+                    RN_obj = f.read_existing_RN(read_RN[i], i)
+                    RN_obj_all.append(RN_obj)
+                pass
+            if self.CB_CreateMail.isChecked():
+                for i in range(num_platform):
+                    f.create_release_mail(RN_obj_all[i], i)
 
 
     def setupUi(self, MainWindow):
@@ -90,14 +93,6 @@ class Ui_MainWindow(object):
         self.CB_ReadRN.setIconSize(QtCore.QSize(24, 24))
         self.CB_ReadRN.setChecked(True)
         self.CB_ReadRN.setObjectName("CB_ReadRN")
-        self.CB_Tag = QtWidgets.QCheckBox(self.centralwidget)
-        self.CB_Tag.setGeometry(QtCore.QRect(840, 280, 241, 20))
-        font = QtGui.QFont()
-        font.setPointSize(12)
-        self.CB_Tag.setFont(font)
-        self.CB_Tag.setIconSize(QtCore.QSize(24, 24))
-        self.CB_Tag.setChecked(True)
-        self.CB_Tag.setObjectName("CB_Tag")
         self.CB_CreateMail = QtWidgets.QCheckBox(self.centralwidget)
         self.CB_CreateMail.setGeometry(QtCore.QRect(840, 200, 261, 20))
         font = QtGui.QFont()
@@ -106,14 +101,30 @@ class Ui_MainWindow(object):
         self.CB_CreateMail.setIconSize(QtCore.QSize(24, 24))
         self.CB_CreateMail.setChecked(True)
         self.CB_CreateMail.setObjectName("CB_CreateMail")
+        self.CB_pushBranchTag = QtWidgets.QCheckBox(self.centralwidget)
+        self.CB_pushBranchTag.setGeometry(QtCore.QRect(450, 160, 361, 20))
+        font = QtGui.QFont()
+        font.setPointSize(12)
+        self.CB_pushBranchTag.setFont(font)
+        self.CB_pushBranchTag.setIconSize(QtCore.QSize(24, 24))
+        self.CB_pushBranchTag.setChecked(True)
+        self.CB_pushBranchTag.setObjectName("CB_pushBranchTag")
         self.CB_RunBatch = QtWidgets.QCheckBox(self.centralwidget)
-        self.CB_RunBatch.setGeometry(QtCore.QRect(450, 160, 361, 20))
+        self.CB_RunBatch.setGeometry(QtCore.QRect(450, 200, 361, 20))
         font = QtGui.QFont()
         font.setPointSize(12)
         self.CB_RunBatch.setFont(font)
         self.CB_RunBatch.setIconSize(QtCore.QSize(24, 24))
         self.CB_RunBatch.setChecked(True)
         self.CB_RunBatch.setObjectName("CB_RunBatch")
+        self.CB_ToSVN = QtWidgets.QCheckBox(self.centralwidget)
+        self.CB_ToSVN.setGeometry(QtCore.QRect(450, 240, 271, 20))
+        font = QtGui.QFont()
+        font.setPointSize(12)
+        self.CB_ToSVN.setFont(font)
+        self.CB_ToSVN.setIconSize(QtCore.QSize(24, 24))
+        self.CB_ToSVN.setChecked(True)
+        self.CB_ToSVN.setObjectName("CB_ToSVN")
         self.CB_DellBiosVersion = QtWidgets.QCheckBox(self.centralwidget)
         self.CB_DellBiosVersion.setGeometry(QtCore.QRect(40, 160, 211, 20))
         font = QtGui.QFont()
@@ -122,14 +133,14 @@ class Ui_MainWindow(object):
         self.CB_DellBiosVersion.setIconSize(QtCore.QSize(24, 24))
         self.CB_DellBiosVersion.setChecked(True)
         self.CB_DellBiosVersion.setObjectName("CB_DellBiosVersion")
-        self.CB_Rename = QtWidgets.QCheckBox(self.centralwidget)
-        self.CB_Rename.setGeometry(QtCore.QRect(450, 240, 271, 20))
-        font = QtGui.QFont()
-        font.setPointSize(12)
-        self.CB_Rename.setFont(font)
-        self.CB_Rename.setIconSize(QtCore.QSize(24, 24))
-        self.CB_Rename.setChecked(True)
-        self.CB_Rename.setObjectName("CB_Rename")
+        # self.CB_Rename = QtWidgets.QCheckBox(self.centralwidget)
+        # self.CB_Rename.setGeometry(QtCore.QRect(450, 240, 271, 20))
+        # font = QtGui.QFont()
+        # font.setPointSize(12)
+        # self.CB_Rename.setFont(font)
+        # self.CB_Rename.setIconSize(QtCore.QSize(24, 24))
+        # self.CB_Rename.setChecked(True)
+        # self.CB_Rename.setObjectName("CB_Rename")
         self.label_5 = QtWidgets.QLabel(self.centralwidget)
         self.label_5.setGeometry(QtCore.QRect(450, 100, 321, 41))
         font = QtGui.QFont()
@@ -137,14 +148,6 @@ class Ui_MainWindow(object):
         self.label_5.setFont(font)
         self.label_5.setAlignment(QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter)
         self.label_5.setObjectName("label_5")
-        self.CB_ToSVN = QtWidgets.QCheckBox(self.centralwidget)
-        self.CB_ToSVN.setGeometry(QtCore.QRect(450, 200, 271, 20))
-        font = QtGui.QFont()
-        font.setPointSize(12)
-        self.CB_ToSVN.setFont(font)
-        self.CB_ToSVN.setIconSize(QtCore.QSize(24, 24))
-        self.CB_ToSVN.setChecked(True)
-        self.CB_ToSVN.setObjectName("CB_ToSVN")
         self.label_6 = QtWidgets.QLabel(self.centralwidget)
         self.label_6.setGeometry(QtCore.QRect(840, 100, 471, 41))
         font = QtGui.QFont()
@@ -152,14 +155,6 @@ class Ui_MainWindow(object):
         self.label_6.setFont(font)
         self.label_6.setAlignment(QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter)
         self.label_6.setObjectName("label_6")
-        self.CB_Branch = QtWidgets.QCheckBox(self.centralwidget)
-        self.CB_Branch.setGeometry(QtCore.QRect(840, 240, 241, 20))
-        font = QtGui.QFont()
-        font.setPointSize(12)
-        self.CB_Branch.setFont(font)
-        self.CB_Branch.setIconSize(QtCore.QSize(24, 24))
-        self.CB_Branch.setChecked(True)
-        self.CB_Branch.setObjectName("CB_Branch")
         self.CB_PlatformConfig = QtWidgets.QCheckBox(self.centralwidget)
         self.CB_PlatformConfig.setGeometry(QtCore.QRect(40, 200, 231, 20))
         font = QtGui.QFont()
@@ -169,7 +164,7 @@ class Ui_MainWindow(object):
         self.CB_PlatformConfig.setChecked(True)
         self.CB_PlatformConfig.setObjectName("CB_PlatformConfig")
         self.btn_Run1 = QtWidgets.QPushButton(self.centralwidget)
-        self.btn_Run1.setGeometry(QtCore.QRect(40, 280, 112, 34))
+        self.btn_Run1.setGeometry(QtCore.QRect(40, 360, 112, 34))
         font = QtGui.QFont()
         font.setPointSize(12)
         self.btn_Run1.setFont(font)
@@ -183,20 +178,12 @@ class Ui_MainWindow(object):
         self.btn_Run2.setObjectName("btn_Run2")
         self.btn_Run2.clicked.connect(self.Run_Button2)
         self.btn_Run3 = QtWidgets.QPushButton(self.centralwidget)
-        self.btn_Run3.setGeometry(QtCore.QRect(840, 370, 112, 34))
+        self.btn_Run3.setGeometry(QtCore.QRect(840, 280, 112, 34))
         font = QtGui.QFont()
         font.setPointSize(12)
         self.btn_Run3.setFont(font)
         self.btn_Run3.setObjectName("btn_Run3")
         self.btn_Run3.clicked.connect(self.Run_Button3)
-        self.CB_pushBranchTag = QtWidgets.QCheckBox(self.centralwidget)
-        self.CB_pushBranchTag.setGeometry(QtCore.QRect(840, 320, 171, 20))
-        font = QtGui.QFont()
-        font.setPointSize(12)
-        self.CB_pushBranchTag.setFont(font)
-        self.CB_pushBranchTag.setIconSize(QtCore.QSize(24, 24))
-        self.CB_pushBranchTag.setChecked(True)
-        self.CB_pushBranchTag.setObjectName("CB_pushBranchTag")
         self.CB_ScanCPI = QtWidgets.QCheckBox(self.centralwidget)
         self.CB_ScanCPI.setGeometry(QtCore.QRect(40, 240, 261, 20))
         font = QtGui.QFont()
@@ -205,6 +192,23 @@ class Ui_MainWindow(object):
         self.CB_ScanCPI.setIconSize(QtCore.QSize(24, 24))
         self.CB_ScanCPI.setChecked(True)
         self.CB_ScanCPI.setObjectName("CB_ScanCPI")
+        self.CB_Branch_Tag = QtWidgets.QCheckBox(self.centralwidget)
+        self.CB_Branch_Tag.setGeometry(QtCore.QRect(40, 280, 241, 20))
+        font = QtGui.QFont()
+        font.setPointSize(12)
+        self.CB_Branch_Tag.setFont(font)
+        self.CB_Branch_Tag.setIconSize(QtCore.QSize(24, 24))
+        self.CB_Branch_Tag.setChecked(True)
+        self.CB_Branch_Tag.setObjectName("CB_Branch_Tag")
+        # self.CB_Tag = QtWidgets.QCheckBox(self.centralwidget)
+        # self.CB_Tag.setGeometry(QtCore.QRect(40, 320, 241, 20))
+        # font = QtGui.QFont()
+        # font.setPointSize(12)
+        # self.CB_Tag.setFont(font)
+        # self.CB_Tag.setIconSize(QtCore.QSize(24, 24))
+        # self.CB_Tag.setChecked(True)
+        # self.CB_Tag.setObjectName("CB_Tag")
+
         MainWindow.setCentralWidget(self.centralwidget)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
         self.statusbar.setObjectName("statusbar")
@@ -221,15 +225,15 @@ class Ui_MainWindow(object):
         self.label_5.setText(_translate("MainWindow", "Step 2 : Build EFI to POT"))
         self.label_6.setText(_translate("MainWindow", "Step 3 : Create mail, rel/ branch, tag"))
         self.CB_ReadRN.setText(_translate("MainWindow", "Read RN"))
-        self.CB_Tag.setText(_translate("MainWindow", "Create tag"))
+        # self.CB_Tag.setText(_translate("MainWindow", "Create tag"))
         self.CB_CreateMail.setText(_translate("MainWindow", "Create mail"))
         self.CB_RunBatch.setText(_translate("MainWindow", "Run Makea and Release Batch"))
-        self.CB_DellBiosVersion.setText(_translate("MainWindow", "DellBiosVersion.h"))
-        self.CB_Rename.setText(_translate("MainWindow", "Rename .efi with SWB"))
+        self.CB_DellBiosVersion.setText(_translate("MainWindow", "Edit DellBiosVersion.h"))
+        # self.CB_Rename.setText(_translate("MainWindow", "Rename .efi with SWB"))
         self.CB_ToSVN.setText(_translate("MainWindow", "Upload .efi to ODM SVN"))
-        self.CB_Branch.setText(_translate("MainWindow", "Create rel/ branch"))
-        self.CB_PlatformConfig.setText(_translate("MainWindow", "PlatformConfig.txt"))
-        self.CB_pushBranchTag.setText(_translate("MainWindow", "Push branch and tag"))
+        self.CB_Branch_Tag.setText(_translate("MainWindow", "Create rel/ branch and tag"))
+        self.CB_PlatformConfig.setText(_translate("MainWindow", "Edit PlatformConfig.txt"))
+        self.CB_pushBranchTag.setText(_translate("MainWindow", "Push rel/ branch and tag"))
         self.CB_ScanCPI.setText(_translate("MainWindow", "Scan CPI"))
         self.btn_Run1.setText(_translate("MainWindow", "Run"))
         self.btn_Run2.setText(_translate("MainWindow", "Run"))

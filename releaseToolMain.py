@@ -6,13 +6,20 @@ import git, pysvn
 import configparser
 from colorama import init, Fore, Back, Style
 init()
-# import const
+os.system('cls')
+
+#
+# Non-fixed Const
+#
+IGNORE_LIST  = ['Spitzer']
+CONVERT_DICT = {"Pathfinder":"Skyline", "Sojourner":"Skyline"}
 
 #  === === === === ===  == == == ==  === === === === ===  #
 #  === === === === ===  == == == ==  === === === === ===  #
 #  === === === === ===  Initialize   === === === === ===  #
 #  === === === === ===  == == == ==  === === === === ===  #
 #  === === === === ===  == == == ==  === === === === ===  #
+
 
 config = configparser.ConfigParser()
 config_file = f'{sys.argv[1]}'
@@ -23,46 +30,53 @@ else:
 	print(f"{config_file} file is not exist.")
 	exit(1)
 DUP_Checkbox   = False             # _INPUT_
-num_platform = len(config.sections())
 print(Fore.GREEN + f"[O] Read configuartion from '{config_file}'. Please double check configuration is correct." + Style.RESET_ALL)
 
-P = []
+INI = []
 for i in config.sections():
-	P.append(dict(config.items(i)))
+	INI.append(dict(config.items(i)))
 
-version        = f"0{P[0]['ver_major']}.0{P[0]['ver_minor']}.0{P[0]['ver_main']}"
-version_cmd    = f"0{P[0]['ver_major']}0{P[0]['ver_minor']}0{P[0]['ver_main']}"
-version_svn    = f"{P[0]['ver_major']}.{P[0]['ver_minor']}.{P[0]['ver_main']}"
-Codename_lower = P[0]['codename'].lower()
-New_rel_branch = f"rel/{Codename_lower}/{Codename_lower}_{P[0]['ver_major']}_{P[0]['ver_minor']}_{P[0]['ver_main']}"
-New_rel_tag    = f"{P[0]['codename']}/{P[0]['ver_major']}_{P[0]['ver_minor']}_{P[0]['ver_main']}"
+P  = {} 
+bulidQueue = []
+for i in config.sections():
+	if i == "CommonData":
+		pass
+	else:
+		bulidQueue.append(i) # Init build queue
+		P.update({i:dict(config.items(i))})
+num_platform = len(P)
+
+version        = f"0{INI[0]['ver_major']}.0{INI[0]['ver_minor']}.0{INI[0]['ver_main']}"
+version_cmd    = f"0{INI[0]['ver_major']}0{INI[0]['ver_minor']}0{INI[0]['ver_main']}"
+version_svn    = f"{INI[0]['ver_major']}.{INI[0]['ver_minor']}.{INI[0]['ver_main']}"
 repo           = None
 DebugMenu_Enable_checkbox = None
-t_drive_folder = [''] * num_platform
-read_RN        = [''] * num_platform
+t_drive_folder = {}
+read_RN        = {}
 
-if P[0]['revision'] == 'X-rev':
+
+if INI[0]['revision'] == 'X-rev':
 	print(Fore.YELLOW + '[!] This is X-rev' + Style.RESET_ALL)
 	DebugMenu_Enable_checkbox = True 
 
-elif P[0]['revision'] == 'A-can':
+elif INI[0]['revision'] == 'A-can':
 	print(Fore.YELLOW + '[!] This is A-can' + Style.RESET_ALL)
 	DebugMenu_Enable_checkbox = False 
 
 if DebugMenu_Enable_checkbox == True : # X-rev
 	DebugMenuONOFF = 'Enabled'
 	C = ''
-	for i in range(num_platform):
-		t_drive_folder[i] = f"T:/Projects/14G.TDC.projects/{P[i]['codename']}/Release/{version}{C}/"
+	for i in bulidQueue:
+		t_drive_folder.update({i:f"T:/Projects/14G.TDC.projects/{P[i]['codename']}/Release/{version}{C}/"})
 
 elif DebugMenu_Enable_checkbox == False : # A-Can
 	DebugMenuONOFF = 'Disabled'
 	C = '-C'
-	for i in range(num_platform):
-		t_drive_folder[i] = f"T:/Projects/14G.TDC.projects/{P[i]['codename']}/Release/{version}{C}/{P[i]['systemname']}/"
+	for i in bulidQueue:
+		t_drive_folder.update({i:f"T:/Projects/14G.TDC.projects/{P[i]['codename']}/Release/{version}{C}/{P[i]['systemname']}/"})
 
-for i in range(num_platform):
-	read_RN[i] = f"{P[i]['systemname']}-0{P[i]['ver_major']}0{P[i]['ver_minor']}0{P[i]['ver_main']}.txt"
+for i in bulidQueue:
+	read_RN.update({i:f"{P[i]['systemname']}-0{INI[0]['ver_major']}0{INI[0]['ver_minor']}0{INI[0]['ver_main']}.txt"})
 
 
 DUP_Available_string    = 'DUPs are available on Agile.'
@@ -77,10 +91,10 @@ else:
 #
 # Files needed to be modified
 #
-Leading_V_RN_File_Name   = f"{P[0]['leading_v']}-0{P[0]['ver_major']}0{P[0]['ver_minor']}0{P[0]['ver_main']}.txt"
-This_ver_RN              = f"{P[0]['systemname']}-0{P[0]['ver_major']}0{P[0]['ver_minor']}0{P[0]['ver_main']}_test.txt"
-RN_file_name   = f"{P[0]['systemname']}-0{P[0]['ver_major']}0{P[0]['ver_minor']}0{P[0]['ver_main']}.txt"
-RN_file_name_2 = f"{P[1]['systemname']}-0{P[1]['ver_major']}0{P[1]['ver_minor']}0{P[1]['ver_main']}.txt"
+# Leading_V_RN_File_Name   = f"{INI[0]['leading_v']}-0{INI[0]['ver_major']}0{INI[0]['ver_minor']}0{INI[0]['ver_main']}.txt"
+# This_ver_RN              = f"{INI[0]['systemname']}-0{INI[0]['ver_major']}0{INI[0]['ver_minor']}0{INI[0]['ver_main']}_test.txt"
+# RN_file_name   = f"{INI[0]['systemname']}-0{INI[0]['ver_major']}0{INI[0]['ver_minor']}0{INI[0]['ver_main']}.txt"
+# RN_file_name_2 = f"{P[1]['systemname']}-0{P[1]['ver_major']}0{P[1]['ver_minor']}0{P[1]['ver_main']}.txt"
 Last_ver_DellBiosVersion = 'DellBiosVersion.h'
 Last_ver_PlatformConfig  = 'PlatformConfig.txt'
 
@@ -102,7 +116,6 @@ find_CHANGES        = 'CHANGES:'
 find_ABP            = 'All Points Bulletin (APB)'
 
 # [DellBiosVersion.h]
-keyword_Platform    = f" {P[0]['codename']} version" # hashtag
 find_Major_ver      = '#define DELL_BIOS_MAJOR_VERSION       '
 find_Minor_ver      = '#define DELL_BIOS_MINOR_VERSION       '
 find_Main_ver       = '#define DELL_BIOS_MAIN_VERSION        '
@@ -133,15 +146,15 @@ class File_Data():
 
 class Functions:
 	def Prepare_for_repo(self):
-		if os.path.isdir(P[0]['repo_dell']):
-			repo = git.Repo(P[0]['repo_dell'])
+		if os.path.isdir(INI[0]['repo_dell']):
+			repo = git.Repo(INI[0]['repo_dell'])
 			# r = repo.remotes.origin
 			print(Fore.GREEN + f"[O] Find repo : {repo}" + Style.RESET_ALL)
 		else:
 			print('[X] Did not find repo')
 
-		repo.git.checkout(f"{P[0]['working_branch']}")
-		repo.git.pull('origin', f"{P[0]['working_branch']}")
+		repo.git.checkout(f"{INI[0]['working_branch']}")
+		repo.git.pull('origin', f"{INI[0]['working_branch']}")
 
 	def Read_last_version_File(self, filename):
 		contents = []
@@ -165,7 +178,7 @@ class Functions:
 		return contents, contents_row
 
 	def Create_this_version(self, obj, filename):
-		# filename = f"{P[0]['codename']}-0{P[0]['ver_major']}0{P[0]['ver_minor']}0{P[0]['ver_main']}_Test.txt"
+		# filename = f"{INI[0]['codename']}-0{INI[0]['ver_major']}0{INI[0]['ver_minor']}0{INI[0]['ver_main']}_Test.txt"
 		try:
 			print(Fore.GREEN + f"\n[O] Successfully Create_this_version : {filename}" + Style.RESET_ALL)
 			file = open(filename, 'r')
@@ -190,15 +203,15 @@ class Functions:
 			try:
 				index = obj.contents[i].index(keywords)
 				if keywords == find_Version:
-					obj.contents[i] = obj.contents[i][:(index + len(keywords))] + f"{P[0]['ver_major']}.{P[0]['ver_minor']}.{P[0]['ver_main']}"
+					obj.contents[i] = obj.contents[i][:(index + len(keywords))] + f"{INI[0]['ver_major']}.{INI[0]['ver_minor']}.{INI[0]['ver_main']}"
 				elif keywords == find_System:
-					obj.contents[i] = obj.contents[i][:(index + len(keywords))] + f"{P[0]['codename']} {P[0]['subcodename_systemname']}"
+					obj.contents[i] = obj.contents[i][:(index + len(keywords))] + f"{INI[0]['codename']} {INI[0]['subcodename_systemname']}"
 				elif keywords == find_Release_Date:
-					obj.contents[i] = obj.contents[i][:(index + len(keywords))] + f"{P[0]['month']}/{P[0]['day']}/{P[0]['year']}"
+					obj.contents[i] = obj.contents[i][:(index + len(keywords))] + f"{INI[0]['month']}/{INI[0]['day']}/{INI[0]['year']}"
 				elif keywords == find_Release_By:
-					obj.contents[i] = obj.contents[i][:(index + len(keywords))] + f"{P[0]['name']}"
+					obj.contents[i] = obj.contents[i][:(index + len(keywords))] + f"{INI[0]['name']}"
 				elif keywords == find_SWB:
-					obj.contents[i] = obj.contents[i][:(index + len(keywords))] + f"{P[0]['swb']}"
+					obj.contents[i] = obj.contents[i][:(index + len(keywords))] + f"{INI[0]['swb']}"
 					if obj.contents[i + 1].index(find_SWB) != -1:
 						del obj.contents[i + 1]
 				elif keywords == find_AEP_Driver:
@@ -233,11 +246,11 @@ class Functions:
 					obj.contents[i] = obj.contents[i][:(index + len(keywords))] + f"{DebugMenuONOFF}" + ' in this version.'	
 
 				elif keywords == find_CHANGES:
-					obj.contents.insert(i+2, f"1. [ESGB-{P[0]['esgb_number']}] Change {P[0]['block']} BIOS version to 0{P[0]['ver_major']}.0{P[0]['ver_minor']}.0{P[0]['ver_main']}")
-					obj.contents.insert(i+3, f"2. Sync to 14G codebase to launch-1(Atlas) {P[0]['ver_major']}.{P[0]['ver_minor']}.{P[0]['ver_main']}")
+					obj.contents.insert(i+2, f"1. [ESGB-{INI[0]['esgb_number']}] Change {INI[0]['block']} BIOS version to 0{INI[0]['ver_major']}.0{INI[0]['ver_minor']}.0{INI[0]['ver_main']}")
+					obj.contents.insert(i+3, f"2. Sync to 14G codebase to launch-1(Atlas) {INI[0]['ver_major']}.{INI[0]['ver_minor']}.{INI[0]['ver_main']}")
 					obj.contents.insert(i+4, f"")
 					obj.contents.insert(i+5, '*************************************************')
-					obj.contents.insert(i+6, f"Sync to 14G codebase to launch-1(Atlas) {P[0]['ver_major']}.{P[0]['ver_minor']}.{P[0]['ver_main']}")
+					obj.contents.insert(i+6, f"Sync to 14G codebase to launch-1(Atlas) {INI[0]['ver_major']}.{INI[0]['ver_minor']}.{INI[0]['ver_main']}")
 					obj.contents.insert(i+7, '*************************************************')
 
 					print(f"\n----------------------------------------------------------------------")
@@ -254,39 +267,41 @@ class Functions:
 		return obj.contents
 
 
-	def find_keywords_n_edit_BV(self, obj, keywords, Platform):
+	def find_keywords_n_edit_BV(self, obj, keywords, hashtag):
 		index = 0
 		i = 0
-		while i < obj.row:
-			if obj.contents[i].find(f'{Platform}') != -1:
+		while i < obj.row:			
+			if obj.contents[i].find(f'{hashtag} start') != -1:
 				j = i
-				while j < i + 50:
+				while j < i + 70:
+					if obj.contents[i].find(f'{hashtag} end') != -1:
+						break
 					try:
 						index = obj.contents[j].index(keywords)
 						if keywords == find_Major_ver:
 							print('----' + f"Code change in '{Last_ver_DellBiosVersion}' : \n")
-							obj.contents[j] = obj.contents[j][:(index + len(keywords))] + f"{P[0]['ver_major']}"
+							obj.contents[j] = obj.contents[j][:(index + len(keywords))] + f"{INI[0]['ver_major']}"
 							print('        ' + obj.contents[j])
 							break
 						elif keywords == find_Minor_ver:
-							obj.contents[j] = obj.contents[j][:(index + len(keywords))] + f"{P[0]['ver_minor']}"
+							obj.contents[j] = obj.contents[j][:(index + len(keywords))] + f"{INI[0]['ver_minor']}"
 							print('        ' + obj.contents[j])
 							break
 						elif keywords == find_Main_ver:
-							obj.contents[j] = obj.contents[j][:(index + len(keywords))] + f"{P[0]['ver_main']}"
+							obj.contents[j] = obj.contents[j][:(index + len(keywords))] + f"{INI[0]['ver_main']}"
 							print('        ' + obj.contents[j])
 							print('')
 							break
 						elif keywords == find_Build_Month:
-							obj.contents[j] = obj.contents[j][:(index + len(keywords))] + f"{P[0]['month']}"
+							obj.contents[j] = obj.contents[j][:(index + len(keywords))] + f"{INI[0]['month']}"
 							print('        ' + obj.contents[j])
 							break
 						elif keywords == find_Build_Day:
-							obj.contents[j] = obj.contents[j][:(index + len(keywords))] + f"{P[0]['day']}"
+							obj.contents[j] = obj.contents[j][:(index + len(keywords))] + f"{INI[0]['day']}"
 							print('        ' + obj.contents[j])
 							break
 						elif keywords == find_Build_Year:
-							obj.contents[j] = obj.contents[j][:(index + len(keywords))] + f"{P[0]['year'][-2:]}"
+							obj.contents[j] = obj.contents[j][:(index + len(keywords))] + f"{INI[0]['year'][-2:]}"
 							print('        ' + obj.contents[j])
 							break
 					except ValueError:
@@ -299,14 +314,15 @@ class Functions:
 		return obj.contents
 
 
-	def find_keywords_n_edit_DM(self, obj, keywords, Platform, DebugMenuONOFF):
+	def find_keywords_n_edit_DM(self, obj, keywords, hashtag, DebugMenuONOFF):
 		index = 0
 		i = 0
 		while i < obj.row:
-			if obj.contents[i].find(f'{Platform}') != -1:
-				# print(f"Found hashtag at #{i}")
+			if obj.contents[i].find(f'{hashtag} start') != -1:
 				j = i
-				while j < i + 5:
+				while j < i + 10:
+					if obj.contents[i].find(f'{hashtag} end') != -1:
+						break
 					try:				
 						index = obj.contents[j].index(keywords)
 						if keywords is find_DebugMenu_PC:
@@ -341,87 +357,102 @@ class Functions:
 	# 	return obj
 
 
-	def edit_BV(self, keywords):
-		print(Back.CYAN + f"\n")
-		print(f"----------------------------")
-		print(f"-- Edit DellBiosVersion.h --")
-		print(f"----------------------------")
-		print(Style.RESET_ALL)
-		path_BV   = P[0]['repo_dell'] + 'DellPkgs/DellPlatformPkgs/' + f"Dell{P[0]['codename']}Pkg/Include/" + Last_ver_DellBiosVersion
-
-		if os.path.isfile(path_BV):
-			print(f"[O] Find the file : {path_BV}")
+	def edit_BV(self, platform, keywords):
+		if platform in CONVERT_DICT :
+			platform = CONVERT_DICT[platform]
+		if platform in IGNORE_LIST :
+			pass
 		else:
-			print(Fore.RED + f"[X] Did not find : {path_BV}" + Style.RESET_ALL)
+			platform_hashtag = f"_{P[platform]['codename']}_" # hashtag
+			print(Back.CYAN + f"\n")
+			print(f"----------------------------")
+			print(f"-- Edit DellBiosVersion.h --")
+			print(f"----------------------------")
+			print(Style.RESET_ALL)
+			path_BV   = INI[0]['repo_dell'] + 'DellPkgs/DellPlatformPkgs/' + f"Dell{platform}Pkg/Include/" + Last_ver_DellBiosVersion
 
-		[get_contents, get_row] = self.Read_last_version_File(path_BV)
-		obj = File_Data(get_contents, get_row)
-		# print(obj.row)
+			if os.path.isfile(path_BV):
+				print(f"[O] Find the file : {path_BV}")
+			else:
+				print(Fore.RED + f"[X] Did not find : {path_BV}" + Style.RESET_ALL)
 
-		for each_keywords in keywords :
-			new_contents = self.find_keywords_n_edit_BV(obj, each_keywords, keyword_Platform)
+			[get_contents, get_row] = self.Read_last_version_File(path_BV)
+			obj = File_Data(get_contents, get_row)
+			# print(obj.row)
 
-		self.Create_this_version(obj, path_BV)
+			for each_keywords in keywords :
+				new_contents = self.find_keywords_n_edit_BV(obj, each_keywords, platform_hashtag)
 
-	def edit_PC(self, keywords):
-		print(Back.CYAN + f"\n")
-		print(f"-----------------------------")
-		print(f"-- Edit PlatformConfig.txt --")
-		print(f"-----------------------------")
-		print(Style.RESET_ALL)
-		path_PC   = P[0]['repo_dell'] + 'DellPkgs/DellPlatformPkgs/' + f"Dell{P[0]['codename']}Pkg/" + Last_ver_PlatformConfig
+			self.Create_this_version(obj, path_BV)
 
-		if os.path.isfile(path_PC):
-			print(f"[O] Find the file : {path_PC}")
+	def edit_PC(self, platform, keywords):
+		if platform in CONVERT_DICT :
+			platform = CONVERT_DICT[platform]
+		if platform in IGNORE_LIST :
+			pass
 		else:
-			print(Fore.RED + f"[X] Did not find : {path_PC}" + Style.RESET_ALL)
+			platform_hashtag = f"_{P[platform]['codename']}_" # hashtag
+			print(Back.CYAN + f"\n")
+			print(f"-----------------------------")
+			print(f"-- Edit PlatformConfig.txt --")
+			print(f"-----------------------------")
+			print(Style.RESET_ALL)
+			path_PC   = INI[0]['repo_dell'] + 'DellPkgs/DellPlatformPkgs/' + f"Dell{platform}Pkg/" + Last_ver_PlatformConfig
 
-		[get_contents, get_row] = self.Read_last_version_File(path_PC)
-		obj = File_Data(get_contents, get_row)
+			if os.path.isfile(path_PC):
+				print(f"[O] Find the file : {path_PC}")
+			else:
+				print(Fore.RED + f"[X] Did not find : {path_PC}" + Style.RESET_ALL)
 
-		new_contents = self.find_keywords_n_edit_DM(obj, keywords, keyword_Platform, DebugMenuONOFF)
+			[get_contents, get_row] = self.Read_last_version_File(path_PC)
+			obj = File_Data(get_contents, get_row)
 
-		self.Create_this_version(obj, path_PC)
+			new_contents = self.find_keywords_n_edit_DM(obj, keywords, platform_hashtag, DebugMenuONOFF)
 
-	def scan_CPI(self):
-		print(Back.CYAN)
-		print(f"--------------")
-		print(f"-- Scan CPI --")
-		print(f"--------------")
-		print(Style.RESET_ALL)
-		index = 0
-		cpi_num = 0
-		list_commits = list(repo.iter_commits(P[0]['working_branch'], max_count = 70))
-		for commit in list_commits:
-			if commit.message.find("version change") != -1:
-				if commit.message.find(f"{P[0]['ver_major']}.{P[0]['ver_minor']}.{P[0]['ver_main']}") == -1:
-					# print(commit.message)
-					index = list_commits.index(commit)
-					# print(index)
-					break
-				# if commit.find("")
-		list_commits = list(repo.iter_commits(P[0]['working_branch'], max_count = index))
+			self.Create_this_version(obj, path_PC)
 
-		for commit in list_commits:
-			for file in commit.stats.files:
-				if file.find("DellPkgs/DellPlatformPkgs/DellAtlasPkg") != -1:
-					if file.find("DellPkgs/DellPlatformPkgs/DellAtlasPkg/Include/DellBiosVersion.h") == -1:
-						print(f"\n---------------------------------------------")
-						print(f"    Path : " + f"{file}")
-						print(f"    Author : {commit.author}")
-						print(f"    Date and time : {commit.authored_datetime}")
-						print(f"    SHA number : {commit}")
-						print(f"---------------------------------------------")
-						cpi_num += 1
+	def scan_CPI(self, platform):
+		if platform in IGNORE_LIST :
+			pass
+		else:
+			print(Back.CYAN)
+			print(f"--------------")
+			print(f"-- Scan CPI --")
+			print(f"--------------")
+			print(Style.RESET_ALL)
+			index = 0
+			cpi_num = 0
+			list_commits = list(repo.iter_commits(INI[0]['working_branch'], max_count = 70))
+			for commit in list_commits:
+				if commit.message.find("version change") != -1:
+					if commit.message.find(f"{INI[0]['ver_major']}.{INI[0]['ver_minor']}.{INI[0]['ver_main']}") == -1:
+						# print(commit.message)
+						index = list_commits.index(commit)
+						# print(index)
+						break
+					# if commit.find("")
+			list_commits = list(repo.iter_commits(INI[0]['working_branch'], max_count = index))
 
-		if cpi_num is 0:
-			print("[O] Found no CPI.\n")
-		else :
-			print(f"[O] Found {cpi_num} suspicious CPI.\n")
-			print(f"    Please check whether these are neccessary CPI or not.\n")
-			print(f"    If yes, please get the CPI to your platform MAUALLY.\n")
+			for commit in list_commits:
+				for file in commit.stats.files:
+					if file.find("DellPkgs/DellPlatformPkgs/DellAtlasPkg") != -1:
+						if file.find("DellPkgs/DellPlatformPkgs/DellAtlasPkg/Include/DellBiosVersion.h") == -1:
+							print(f"\n---------------------------------------------")
+							print(f"    Path : " + f"{file}")
+							print(f"    Author : {commit.author}")
+							print(f"    Date and time : {commit.authored_datetime}")
+							print(f"    SHA number : {commit}")
+							print(f"---------------------------------------------")
+							cpi_num += 1
 
+			if cpi_num is 0:
+				print("[O] Found no CPI.\n")
+			else :
+				print(f"[O] Found {cpi_num} suspicious CPI.\n")
+				print(f"    Please check whether these are neccessary CPI or not.\n")
+				print(f"    If yes, please get the CPI to your platform MAUALLY.\n")
 
+	def check_before_POT(self):
 		#
 		# Check status before build code
 		#
@@ -433,65 +464,73 @@ class Functions:
 		print(Fore.YELLOW + f'[!] Check these before you go to "Step 2 : Bulid EFI to POT"')
 		print(Style.RESET_ALL)
 		for item in repo.index.diff(None):
-			print(item)
-			print('\n')
-		print(f"\n")
+			print(item.a_path)
+			# print(dir(item))
+			# print('\n')
 
 
 	#
 	# Build & Release & upload SVN & Rename EFI
 	#
-	def build_n_release(self):
-		folder_path = P[0]['repo_dell'] + 'DellPkgs/DellPlatformPkgs/' + f"Dell{P[0]['codename']}Pkg/"
-		# print(folder_path + 'Makea_Arev_Release.bat')
-		
-		try:
-			if DebugMenu_Enable_checkbox == True :    # X-rev
-				bat_file = 'Makea_Release.bat'
-			elif DebugMenu_Enable_checkbox == False : # A-Can
-				bat_file = 'Makea_Arev_Release.bat'
-			subprocess.check_call(f"{bat_file}", shell=True, cwd=f'{folder_path}')
-			print('ok')
-		except subprocess.CalledProcessError:
-			print('error')
-			exit(0)
+	def build_n_release(self, platform):
+		if platform in IGNORE_LIST :
+			pass
+		else:
+			# print(INI[0]['repo_dell'] + 'DellPkgs/DellPlatformPkgs/' + f"Dell{P[platform]['codename']}Pkg/")
+			# time.sleep(2)
+			folder_path = INI[0]['repo_dell'] + 'DellPkgs/DellPlatformPkgs/' + f"Dell{P[platform]['codename']}Pkg/"
 
-		# Check T drive folder (for rebuild)
-		if os.path.isdir(t_drive_folder[0]):
-			shutil.rmtree(t_drive_folder[0])
-
-		for index in range(num_platform): # !Cautious : Spitzer only!?
+			# print(folder_path + 'Makea_Arev_Release.bat')
+			
 			try:
 				if DebugMenu_Enable_checkbox == True :    # X-rev
-					rel_cmd = 'release.bat' + f" {P[index]['systemname']}" + f" {version_cmd}"
+					bat_file = 'Makea_Release.bat'
 				elif DebugMenu_Enable_checkbox == False : # A-Can
-					rel_cmd = 'release.bat' + f" {P[index]['systemname']}" + f" {version_cmd}" + ' A'
-				print(f"Run cmd : {rel_cmd}")
-				subprocess.check_call(f"{rel_cmd}", shell=True, cwd=f'{folder_path}')
-				print(f"[O] release.bat for {P[index]['systemname']}")
+					bat_file = 'Makea_Arev_Release.bat'
+				subprocess.check_call(f"{bat_file}", shell=True, cwd=f'{folder_path}')
+				print('ok')
 			except subprocess.CalledProcessError:
 				print('error')
+				exit(0)
 
-	def upload_to_svn(self):
-		client = pysvn.Client()
-		file_name = f"{P[0]['systemname']}-0{P[0]['ver_major']}0{P[0]['ver_minor']}0{P[0]['ver_main']}.efi"
-		file_path = t_drive_folder[0] + file_name
+			# Check T drive folder (for rebuild)
+			if os.path.isdir(t_drive_folder[platform]):
+				shutil.rmtree(t_drive_folder[platform])
 
-		# ODM SVN (Foxconn) _input_
-		svn_url = f"https://f2dsvn.{P[0]['odm']}.com/svn/14G_misc/{P[0]['codename']}/Release/BIOS/MLK/{version_svn}/{file_name}"
-		print(f"[O] Get SVN path : {svn_url}")
+		try:
+			if DebugMenu_Enable_checkbox == True :    # X-rev
+				rel_cmd = 'release.bat' + f" {P[platform]['systemname']}" + f" {version_cmd}"
+			elif DebugMenu_Enable_checkbox == False : # A-Can
+				rel_cmd = 'release.bat' + f" {P[platform]['systemname']}" + f" {version_cmd}" + ' A'
+			print(f"Run cmd : {rel_cmd}")
+			subprocess.check_call(f"{rel_cmd}", shell=True, cwd=f'{folder_path}')
+			print(f"[O] release.bat for {P[platform]['systemname']}")
+		except subprocess.CalledProcessError:
+			print('error')
 
-		client.import_(path = file_path,
-		               url = f'{svn_url}',
-		               log_message = 'Hi Webb, EFI file was uploaded. Please help perform POT. Thanks!')
-		print(Fore.GREEN + "[O] Successfully upload to svn. Please check it." + Style.RESET_ALL)
+	def upload_to_svn(self, platform):
+		if platform in IGNORE_LIST :
+			pass
+		else:
+			client = pysvn.Client()
+			file_name = f"{P[platform]['systemname']}-0{INI[0]['ver_major']}0{INI[0]['ver_minor']}0{INI[0]['ver_main']}.efi"
+			file_path = t_drive_folder[platform] + file_name
+
+			# ODM SVN (Foxconn) _input_
+			svn_url = f"https://f2dsvn.{P[platform]['odm']}.com/svn/14G_misc/{P[platform]['codename']}/Release/BIOS/MLK/{version_svn}/{file_name}"
+			print(f"[O] Get SVN path : {svn_url}")
+
+			client.import_(path = file_path,
+			               url = f'{svn_url}',
+			               log_message = 'Hi Webb, EFI file was uploaded. Please help perform POT. Thanks!')
+			print(Fore.GREEN + "[O] Successfully upload to svn. Please check it." + Style.RESET_ALL)
 
 
 	def rename_EFI_withSWB(self):
 		for index in range(num_platform):
-			os.chdir(t_drive_folder[0])
+			os.chdir(t_drive_folder[platform])
 			new_name  = f"BIOS_{P[index]['swb']}_EFI_{P[index]['ver_major']}.{P[index]['ver_minor']}.{P[index]['ver_main']}.efi"
-			for file in os.listdir(t_drive_folder[0]):
+			for file in os.listdir(t_drive_folder[platform]):
 			    if file.endswith(".efi"):
 			    	# print(f"Found an EFI file : '{file}'")
 			    	os.rename(file, new_name)
@@ -570,65 +609,85 @@ class Functions:
 		mail.Display(True)
 
 
+	def commit_block_branch(self, platform):
+		if platform in CONVERT_DICT :
+			platform = CONVERT_DICT[platform]
+		if platform in IGNORE_LIST :
+			pass
+		else:
+			path_BV = INI[0]['repo_dell'] + 'DellPkgs/DellPlatformPkgs/' + f"Dell{platform}Pkg/Include/" + Last_ver_DellBiosVersion
+			path_PC = INI[0]['repo_dell'] + 'DellPkgs/DellPlatformPkgs/' + f"Dell{platform}Pkg/"         + Last_ver_PlatformConfig
+			version = f"0{INI[0]['ver_major']}.0{INI[0]['ver_minor']}.0{INI[0]['ver_main']}"
 
-	#
-	# Create rel branch
-	#
-	def commit_block_branch(self):
-		path_BV = P[0]['repo_dell'] + 'DellPkgs/DellPlatformPkgs/' + f"Dell{P[0]['codename']}Pkg/Include/" + Last_ver_DellBiosVersion
-		path_PC = P[0]['repo_dell'] + 'DellPkgs/DellPlatformPkgs/' + f"Dell{P[0]['codename']}Pkg/"         + Last_ver_PlatformConfig
-		version = f"0{P[0]['ver_major']}.0{P[0]['ver_minor']}.0{P[0]['ver_main']}"
+			# Do Not commit Recovery .rom
+			# if repo.git.status().find('16MBRecoveryBios.rom') != 0 :
+			# 	repo.git.reset('DellPkgs/DellPlatformPkgs/DellTaurusPkg/BiosRecovery/Taurus_16MBRecoveryBios.rom')
 
-		repo.git.checkout(f"{P[0]['working_branch']}")
-		repo.git.pull('origin', f"{P[0]['working_branch']}")
+			for item in repo.index.diff(None):
+				# print(item.a_path)
+				if  item.a_path in path_BV:
+					repo.git.add(f"{path_BV}")
+					print(Fore.YELLOW + f"add {path_BV} to commit" + Style.RESET_ALL)
 
-		# Do Not commit Recovery .rom
-		# if repo.git.status().find('16MBRecoveryBios.rom') != 0 :
-		# 	repo.git.reset('DellPkgs/DellPlatformPkgs/DellTaurusPkg/BiosRecovery/Taurus_16MBRecoveryBios.rom')
+				if  item.a_path in path_PC:
+					repo.git.add(f"{path_PC}")
+					print(Fore.YELLOW + f"add {path_PC} to commit" + Style.RESET_ALL)
 
-		for item in repo.index.diff(None):
-			# print(item.a_path)
-			if  item.a_path in path_BV:
-				repo.git.add(f"{path_BV}")
-				print(Fore.YELLOW + f"add {path_BV} to commit" + Style.RESET_ALL)
-
-			if  item.a_path in path_PC:
-				repo.git.add(f"{path_PC}")
-				print(Fore.YELLOW + f"add {path_PC} to commit" + Style.RESET_ALL)
-
-		repo.git.commit('-m', f"[ESGB-{P[0]['esgb_number']}][{P[0]['codename']}] Change {P[0]['block']} BIOS version to {version}.")
-		# repo.git.push('origin', f"{P[0]['working_branch']}")
+			repo.git.commit('-m', f"[ESGB-{P[platform]['esgb_number']}][{P[platform]['codename']}] Change {INI[0]['block']} BIOS version to {version}.")
+			# repo.git.push('origin', f"{INI[0]['working_branch']}")
 
 
-	def create_rel_branch(self):
-		if repo.active_branch.name != P[0]['working_branch']:
-			repo.git.checkout(f"{P[0]['working_branch']}")
+	def create_rel_branch(self, platform):
+		if platform in CONVERT_DICT :
+			platform = CONVERT_DICT[platform]
+		if platform in IGNORE_LIST :
+			pass
+		else:
+			Codename_lower = P[platform]['codename'].lower()
+			New_rel_branch = f"rel/{Codename_lower}/{Codename_lower}_{INI[0]['ver_major']}_{INI[0]['ver_minor']}_{INI[0]['ver_main']}"
+			
+			if repo.active_branch.name != INI[0]['working_branch']:
+				repo.git.checkout(f"{INI[0]['working_branch']}")
 
-		repo.git.pull('origin', f"{P[0]['working_branch']}")
-		try:
-			b = repo.create_head(New_rel_branch)
-		except git.exc.GitCommandError:
-			print(Fore.GREEN + f"branch {New_rel_branch} already exists")
+			repo.git.pull('origin', f"{INI[0]['working_branch']}")
+			try:
+				b = repo.create_head(New_rel_branch)
+			except git.exc.GitCommandError:
+				print(Fore.GREEN + f"branch {New_rel_branch} already exists")
 
-		b.checkout()
-		print(Fore.GREEN + f"[O] Successfully create new rel branch {New_rel_branch}" + Style.RESET_ALL)
+			b.checkout()
+			print(Fore.GREEN + f"[O] Successfully create new rel branch {New_rel_branch}" + Style.RESET_ALL)
 
 	 
-	def create_rel_tag(self):
-		try:
-			print(f"To create new tag {New_rel_tag}")
-			repo.create_tag(New_rel_tag)
-		except git.exc.GitCommandError:
-			print(Fore.GREEN + f"tag {New_rel_tag} already exists" + Style.RESET_ALL)
+	def create_rel_tag(self, platform):
+		if platform in CONVERT_DICT :
+			platform = CONVERT_DICT[platform]
+		if platform in IGNORE_LIST :
+			pass
+		else:
+			New_rel_tag = f"{P[platform]['codename']}/{INI[0]['ver_major']}_{INI[0]['ver_minor']}_{INI[0]['ver_main']}"
+			try:
+				# print(f"To create new tag {New_rel_tag}")
+				repo.create_tag(New_rel_tag)
+			except git.exc.GitCommandError:
+				print(Fore.GREEN + f"tag {New_rel_tag} already exists" + Style.RESET_ALL)
 
-		print(f"[O] Successfully create new tag {New_rel_tag}")
+			print(Fore.GREEN + f"[O] Successfully create new tag {New_rel_tag}" + Style.RESET_ALL)
 
-	def push_branch_tag(self):
-		repo.git.push('origin', f"{P[0]['working_branch']}")
-		repo.git.push('origin', f"{New_rel_branch}")
-		repo.git.push('origin', f"{New_rel_tag}")
-		print(Fore.GREEN + f"[O] Successfully push {P[0]['working_branch']}, {New_rel_branch}, {New_rel_tag}" + Style.RESET_ALL)
+	def push_branch_tag(self, platform):
+		if platform in CONVERT_DICT :
+			platform = CONVERT_DICT[platform]
+		if platform in IGNORE_LIST :
+			pass
+		else:
+			Codename_lower = P[platform]['codename'].lower()
+			New_rel_branch = f"rel/{Codename_lower}/{Codename_lower}_{INI[0]['ver_major']}_{INI[0]['ver_minor']}_{INI[0]['ver_main']}"
+			New_rel_tag    = f"{P[platform]['codename']}/{INI[0]['ver_major']}_{INI[0]['ver_minor']}_{INI[0]['ver_main']}"
 
+			repo.git.push('origin', f"{INI[0]['working_branch']}")
+			repo.git.push('origin', f"{New_rel_branch}")
+			repo.git.push('origin', f"{New_rel_tag}")
+			print(Fore.GREEN + f"[O] Successfully push {INI[0]['working_branch']}, {New_rel_branch}, {New_rel_tag}" + Style.RESET_ALL)
 
 
 	def update_INIdata(self):
@@ -662,7 +721,7 @@ class Functions:
 
 f = Functions()
 f.Prepare_for_repo()
-repo = git.Repo(P[0]['repo_dell'])
+repo = git.Repo(INI[0]['repo_dell'])
 # RN_obj = f.create_RN(Leading_V_RN_File_Name, RN_list_keywords)
 # f.edit_BV(BV_list_keywords)
 # f.edit_PC(DM_list_keywords)
