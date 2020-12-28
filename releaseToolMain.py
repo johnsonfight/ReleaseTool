@@ -29,7 +29,7 @@ if os.path.isfile(f'./{config_file}'):
 else:
 	print(f"{config_file} file is not exist.")
 	exit(1)
-DUP_Checkbox   = False             # _INPUT_
+
 print(Fore.GREEN + f"[O] Read configuartion from '{config_file}'. Please double check configuration is correct." + Style.RESET_ALL)
 
 INI = []
@@ -37,18 +37,28 @@ for i in config.sections():
 	INI.append(dict(config.items(i)))
 
 P  = {} 
-bulidQueue = []
+PlatformQueue = []
 for i in config.sections():
 	if i == "CommonData":
 		pass
 	else:
-		bulidQueue.append(i) # Init build queue
+		PlatformQueue.append(i) # Init build queue
 		P.update({i:dict(config.items(i))})
 num_platform = len(P)
 
-version        = f"0{INI[0]['ver_major']}.0{INI[0]['ver_minor']}.0{INI[0]['ver_main']}"
-version_cmd    = f"0{INI[0]['ver_major']}0{INI[0]['ver_minor']}0{INI[0]['ver_main']}"
-version_svn    = f"{INI[0]['ver_major']}.{INI[0]['ver_minor']}.{INI[0]['ver_main']}"
+
+version        = 'ver_major.ver_minor.ver_main'
+version_cmd    = 'ver_majorver_minorver_main'
+version_svn    = 'ver_major.ver_minor.ver_main'
+
+f     = lambda target, i, number : target.replace(i, '0'+number) if (int(number) < 10) else target.replace(i, number)
+f_svn = lambda target, i, number : target.replace(i, number) if (int(number) < 10) else target.replace(i, number)
+
+for i in ['ver_major', 'ver_minor', 'ver_main']:
+	version     = f(version, i, INI[0][i])
+	version_cmd = f(version_cmd, i, INI[0][i])
+	version_svn = f_svn(version_svn, i, INI[0][i])
+
 repo           = None
 DebugMenu_Enable_checkbox = None
 t_drive_folder = {}
@@ -66,26 +76,21 @@ elif INI[0]['revision'] == 'A-can':
 if DebugMenu_Enable_checkbox == True : # X-rev
 	DebugMenuONOFF = 'Enabled'
 	C = ''
-	for i in bulidQueue:
+	for i in PlatformQueue:
 		t_drive_folder.update({i:f"T:/Projects/14G.TDC.projects/{P[i]['codename']}/Release/{version}{C}/"})
 
 elif DebugMenu_Enable_checkbox == False : # A-Can
 	DebugMenuONOFF = 'Disabled'
 	C = '-C'
-	for i in bulidQueue:
+	for i in PlatformQueue:
 		t_drive_folder.update({i:f"T:/Projects/14G.TDC.projects/{P[i]['codename']}/Release/{version}{C}/{P[i]['systemname']}/"})
 
-for i in bulidQueue:
-	read_RN.update({i:f"{P[i]['systemname']}-0{INI[0]['ver_major']}0{INI[0]['ver_minor']}0{INI[0]['ver_main']}.txt"})
-
+for i in PlatformQueue:
+	read_RN.update({i:f"{P[i]['systemname']}-{version_cmd}.txt"})
 
 DUP_Available_string    = 'DUPs are available on Agile.'
 DUP_NOT_Avaiable_string = 'DUPs are NOT available on Agile.'
 DUP_text = ''
-if DUP_Checkbox is True:
-	DUP_text = DUP_Available_string
-else:
-	DUP_text = DUP_NOT_Avaiable_string
 
 
 #
@@ -153,6 +158,7 @@ class Functions:
 		else:
 			print('[X] Did not find repo')
 
+		print(Fore.YELLOW + f"[!] Check out {INI[0]['working_branch']}" + Style.RESET_ALL)
 		repo.git.checkout(f"{INI[0]['working_branch']}")
 		repo.git.pull('origin', f"{INI[0]['working_branch']}")
 
@@ -412,45 +418,46 @@ class Functions:
 			self.Create_this_version(obj, path_PC)
 
 	def scan_CPI(self, platform):
-		if platform in IGNORE_LIST :
-			pass
-		else:
-			print(Back.CYAN)
-			print(f"--------------")
-			print(f"-- Scan CPI --")
-			print(f"--------------")
-			print(Style.RESET_ALL)
-			index = 0
-			cpi_num = 0
-			list_commits = list(repo.iter_commits(INI[0]['working_branch'], max_count = 70))
-			for commit in list_commits:
-				if commit.message.find("version change") != -1:
-					if commit.message.find(f"{INI[0]['ver_major']}.{INI[0]['ver_minor']}.{INI[0]['ver_main']}") == -1:
-						# print(commit.message)
-						index = list_commits.index(commit)
-						# print(index)
-						break
-					# if commit.find("")
-			list_commits = list(repo.iter_commits(INI[0]['working_branch'], max_count = index))
+		print(platform)
+		# if platform in IGNORE_LIST :
+		# 	pass
+		# else:
+		# 	print(Back.CYAN)
+		# 	print(f"--------------")
+		# 	print(f"-- Scan CPI --")
+		# 	print(f"--------------")
+		# 	print(Style.RESET_ALL)
+		# 	index = 0
+		# 	cpi_num = 0
+		# 	list_commits = list(repo.iter_commits(INI[0]['working_branch'], max_count = 70))
+		# 	for commit in list_commits:
+		# 		if commit.message.find("version change") != -1:
+		# 			if commit.message.find(f"{INI[0]['ver_major']}.{INI[0]['ver_minor']}.{INI[0]['ver_main']}") == -1:
+		# 				# print(commit.message)
+		# 				index = list_commits.index(commit)
+		# 				# print(index)
+		# 				break
+		# 			# if commit.find("")
+		# 	list_commits = list(repo.iter_commits(INI[0]['working_branch'], max_count = index))
 
-			for commit in list_commits:
-				for file in commit.stats.files:
-					if file.find("DellPkgs/DellPlatformPkgs/DellAtlasPkg") != -1:
-						if file.find("DellPkgs/DellPlatformPkgs/DellAtlasPkg/Include/DellBiosVersion.h") == -1:
-							print(f"\n---------------------------------------------")
-							print(f"    Path : " + f"{file}")
-							print(f"    Author : {commit.author}")
-							print(f"    Date and time : {commit.authored_datetime}")
-							print(f"    SHA number : {commit}")
-							print(f"---------------------------------------------")
-							cpi_num += 1
+		# 	for commit in list_commits:
+		# 		for file in commit.stats.files:
+		# 			if file.find("DellPkgs/DellPlatformPkgs/DellAtlasPkg") != -1:
+		# 				if file.find("DellPkgs/DellPlatformPkgs/DellAtlasPkg/Include/DellBiosVersion.h") == -1:
+		# 					print(f"\n---------------------------------------------")
+		# 					print(f"    Path : " + f"{file}")
+		# 					print(f"    Author : {commit.author}")
+		# 					print(f"    Date and time : {commit.authored_datetime}")
+		# 					print(f"    SHA number : {commit}")
+		# 					print(f"---------------------------------------------")
+		# 					cpi_num += 1
 
-			if cpi_num is 0:
-				print("[O] Found no CPI.\n")
-			else :
-				print(f"[O] Found {cpi_num} suspicious CPI.\n")
-				print(f"    Please check whether these are neccessary CPI or not.\n")
-				print(f"    If yes, please get the CPI to your platform MAUALLY.\n")
+		# 	if cpi_num is 0:
+		# 		print("[O] Found no CPI.\n")
+		# 	else :
+		# 		print(f"[O] Found {cpi_num} suspicious CPI.\n")
+		# 		print(f"    Please check whether these are neccessary CPI or not.\n")
+		# 		print(f"    If yes, please get the CPI to your platform MAUALLY.\n")
 
 	def check_before_POT(self):
 		#
@@ -493,9 +500,9 @@ class Functions:
 				print('error')
 				exit(0)
 
-			# Check T drive folder (for rebuild)
-			if os.path.isdir(t_drive_folder[platform]):
-				shutil.rmtree(t_drive_folder[platform])
+		# Check T drive folder (for rebuild)
+		if os.path.isdir(t_drive_folder[platform]):
+			shutil.rmtree(t_drive_folder[platform])
 
 		try:
 			if DebugMenu_Enable_checkbox == True :    # X-rev
@@ -505,8 +512,8 @@ class Functions:
 			print(f"Run cmd : {rel_cmd}")
 			subprocess.check_call(f"{rel_cmd}", shell=True, cwd=f'{folder_path}')
 			print(f"[O] release.bat for {P[platform]['systemname']}")
-		except subprocess.CalledProcessError:
-			print('error')
+		except:
+				print('Exception')
 
 	def upload_to_svn(self, platform):
 		if platform in IGNORE_LIST :
@@ -536,13 +543,15 @@ class Functions:
 			    	os.rename(file, new_name)
 			    	print(Fore.GREEN + f"[O] EFI has been renamed as '{new_name}'" + Style.RESET_ALL)
 
-	def read_existing_RN(self, filename, index):
+	def read_existing_RN(self, filename, platform):
 		#
 		# First, download RN from ODM SVN
 		#
-		svn_url   = f"https://f2dsvn.{P[index]['odm']}.com/svn/14G_misc/{P[index]['codename']}/Release/BIOS/MLK/{version_svn}/{filename}"
-		dest_path = t_drive_folder[index] + filename
+		svn_url   = f"https://f2dsvn.{P[platform]['odm']}.com/svn/14G_misc/{P[platform]['codename']}/Release/BIOS/MLK/{version_svn}/{filename}"
+		dest_path = t_drive_folder[platform] + filename
 		client = pysvn.Client()
+
+		print(dest_path)
 
 		if os.path.isfile(dest_path) != True:
 			try:
@@ -561,8 +570,8 @@ class Functions:
 		contents = []
 		contents_row = 0
 		try:
-			RN_last_ver = open(dest_path, "r", encoding="UTF-8")
-			contents = RN_last_ver.read().splitlines()
+			RN = open(dest_path, "r", encoding="UTF-8")
+			contents = RN.read().splitlines()
 			for line in contents:
 				contents_row += 1
 				if line.find(find_Version) != -1:
@@ -571,23 +580,28 @@ class Functions:
 			contents_row = len(contents)
 
 			print(f"[O] Get RN, total row : '{contents_row}'" + Style.RESET_ALL)
-			RN_last_ver.close()
+			RN.close()
 
 		except IOError:
-			print(Fore.RED + f"[X] Can not find Release Note {dest_path}" + Style.RESET_ALL)
-			pass
+			obj = File_Data(contents, contents_row)
+			return obj
 
 		obj = File_Data(contents, contents_row)
 		return obj
 
 
-	def create_release_mail(self, obj, index):
-		version = P[index]['ver_major'] + '.' + P[index]['ver_minor'] + '.' + P[index]['ver_main']
-		Title   = f"Release : BIOS, Dell Server BIOS {P[index]['generation']}, {P[index]['codename']} {P[index]['subcodename']}, {P[index]['revision']} {version} ({P[index]['block']}), SWB#{P[index]['swb']}" 
+	def create_release_mail(self, obj, platform, DUP_Checkbox):
+		if DUP_Checkbox is True:
+			DUP_text = DUP_Available_string
+		else:
+			DUP_text = DUP_NOT_Avaiable_string
+		print(DUP_text)
+		version = INI[0]['ver_major'] + '.' + INI[0]['ver_minor'] + '.' + INI[0]['ver_main']
+		Title   = f"Release : BIOS, Dell Server BIOS {P[platform]['generation']}, {P[platform]['codename']} {P[platform]['subcodename']}, {INI[0]['revision']} {version} ({INI[0]['block']}), SWB#{P[platform]['swb']}" 
 		Content = f"Hi all,\n\
 		\n\
-		{P[index]['generation']} {P[index]['codename']} {P[index]['subcodename_systemname']} BIOS version {version} {P[index]['revision']} ({P[index]['block']} block) is available on Agile.\n\
-		SWB# : {P[index]['swb']}\n\
+		{P[platform]['generation']} {P[platform]['codename']} {P[platform]['subcodename_systemname']} BIOS version {version} {INI[0]['revision']} ({INI[0]['block']} block) is available on Agile.\n\
+		SWB# : {P[platform]['swb']}\n\
 		{DUP_text}\n\
 		\n\
 		\n" 
@@ -602,8 +616,8 @@ class Functions:
 
 		olook = win32.Dispatch("outlook.application")
 		mail = olook.CreateItem(0)
-		mail.To = P[index]['receivers']
-		mail.CC = P[index]['cc']
+		mail.To = P[platform]['receivers']
+		mail.CC = P[platform]['cc']
 		mail.Subject = Title
 		mail.Body = Content
 		mail.Display(True)
