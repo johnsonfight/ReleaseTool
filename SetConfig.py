@@ -1,61 +1,79 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
-# from ReleaseTool_0627 import Ui_MainWindow
+from ReleaseTool_0627 import Ui_MainWindow
 from ConstAndInit import *
+import os, sys, shutil, subprocess
+import configparser
 
-global ini_file
+config = configparser.ConfigParser()
+
 class Ui_SetConfig(object):
-	def setupUi(self, SetupConfig):
+	def __init__(self, file_name):
+		self.filename = file_name
+
+
+	def read_config(self, config_file):
+		if os.path.isfile(f'{config_file}'):
+			config.read(config_file)
+		else:
+			print(f"{config_file} file is not exist.")
+			exit(1)
+
+
+	def writeSetConfig(self, config_file):
+		config['CommonData']['year']      = str(self.dateEdit.date().year())
+		config['CommonData']['month']     = str(self.dateEdit.date().month())
+		config['CommonData']['day']       = str(self.dateEdit.date().day())
+		config['CommonData']['ver_major'] = str(self.spinBox.value())
+		config['CommonData']['ver_minor'] = str(self.spinBox_2.value())
+		config['CommonData']['ver_main']  = str(self.spinBox_3.value())
+		config['CommonData']['block']     = str(self.plainTextEdit_b.toPlainText())
+		config['CommonData']['revision']  = str(self.comboBox.currentText())
+		config['CommonData']['revision']  = str(self.plainTextEdit.toPlainText())
+		config['CommonData']['repo_dell'] = str(self.plainTextEdit_2.toPlainText())
+
+		with open(config_file, 'w') as configfile:
+		    config.write(configfile)
+
+
+	def setupUi(self, SetupConfig, filename):
+		self.read_config(filename)
 		SetupConfig.setObjectName("SetupConfig")
-		SetupConfig.resize(560, 460)
+		SetupConfig.resize(630, 460)
 		self.centralwidget = QtWidgets.QWidget(SetupConfig)
 		self.centralwidget.setObjectName("centralwidget")
 
-
-		# self.label_1 = QtWidgets.QLabel(self.centralwidget)
-		# self.label_1.setGeometry(QtCore.QRect(40, 40, 200, 21))
-		# font = QtGui.QFont()
-		# font.setPointSize(14)
-		# self.label_1.setFont(font)
-		# self.label_1.setAlignment(QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft|QtCore.Qt.AlignVCenter)
-		# self.label_1.setObjectName("label_1")
-
-
-		# self.btn_ConfigFile = QtWidgets.QPushButton(self.centralwidget)
-		# self.btn_ConfigFile.setGeometry(QtCore.QRect(40, 80, 112, 34))
-		# font = QtGui.QFont()
-		# font.setPointSize(12)
-		# self.btn_ConfigFile.setFont(font)
-		# self.btn_ConfigFile.setObjectName("btn_ConfigFile")
-		# self.btn_ConfigFile.clicked.connect(self.Btn_ConfigFile)
-
-		# self.btn_pop_window = QtWidgets.QPushButton(self.centralwidget)
-		# self.btn_pop_window.setGeometry(QtCore.QRect(100, 120, 26, 26))
-		# font = QtGui.QFont()
-		# font.setPointSize(12)
-		# self.btn_pop_window.setFont(font)
-		# self.btn_pop_window.setObjectName("btn_pop_window")
-		# self.btn_pop_window.clicked.connect(self.show_popup)
-
-		self.textBrowser = QtWidgets.QTextBrowser(self.centralwidget)
-		self.textBrowser.setGeometry(QtCore.QRect(130, 20, 331, 41))
-		self.textBrowser.setObjectName("textBrowser")
-		self.spinBox = QtWidgets.QSpinBox(self.centralwidget)
-		self.spinBox.setGeometry(QtCore.QRect(130, 140, 45, 21))
-		self.spinBox.setObjectName("spinBox")
-		self.spinBox_2 = QtWidgets.QSpinBox(self.centralwidget)
-		self.spinBox_2.setGeometry(QtCore.QRect(180, 140, 45, 21))
-		self.spinBox_2.setObjectName("spinBox_2")
-		self.spinBox_3 = QtWidgets.QSpinBox(self.centralwidget)
-		self.spinBox_3.setGeometry(QtCore.QRect(230, 140, 45, 21))
-		self.spinBox_3.setObjectName("spinBox_3")
 		self.label = QtWidgets.QLabel(self.centralwidget)
-		self.label.setGeometry(QtCore.QRect(30, 30, 81, 19))
+		self.label.setGeometry(QtCore.QRect(30, 40, 81, 19))
 		font = QtGui.QFont()
 		font.setPointSize(12)
 		self.label.setFont(font)
 		self.label.setObjectName("label")
+		self.textBrowser = QtWidgets.QTextBrowser(self.centralwidget)
+		self.textBrowser.setGeometry(QtCore.QRect(130, 30, 360, 34))
+		font = QtGui.QFont()
+		font.setPointSize(12)
+		self.textBrowser.setFont(font)
+		self.textBrowser.setObjectName("textBrowser")
+		self.spinBox = QtWidgets.QSpinBox(self.centralwidget)
+		self.spinBox.setGeometry(QtCore.QRect(130, 140, 45, 21))
+		font = QtGui.QFont()
+		font.setPointSize(12)
+		self.spinBox.setFont(font)
+		self.spinBox.setObjectName("spinBox")
+		self.spinBox_2 = QtWidgets.QSpinBox(self.centralwidget)
+		self.spinBox_2.setGeometry(QtCore.QRect(180, 140, 45, 21))
+		font = QtGui.QFont()
+		font.setPointSize(12)
+		self.spinBox_2.setFont(font)
+		self.spinBox_2.setObjectName("spinBox_2")
+		self.spinBox_3 = QtWidgets.QSpinBox(self.centralwidget)
+		self.spinBox_3.setGeometry(QtCore.QRect(230, 140, 45, 21))
+		font = QtGui.QFont()
+		font.setPointSize(12)
+		self.spinBox_3.setFont(font)
+		self.spinBox_3.setObjectName("spinBox_3")
 		self.comboBox = QtWidgets.QComboBox(self.centralwidget)
-		self.comboBox.setGeometry(QtCore.QRect(130, 190, 141, 21))
+		self.comboBox.setGeometry(QtCore.QRect(130, 240, 141, 21))
 		font = QtGui.QFont()
 		font.setPointSize(12)
 		self.comboBox.setFont(font)
@@ -64,12 +82,15 @@ class Ui_SetConfig(object):
 		self.comboBox.addItem("")
 		self.dateEdit = QtWidgets.QDateEdit(self.centralwidget)
 		self.dateEdit.setGeometry(QtCore.QRect(130, 84, 141, 31))
+		font = QtGui.QFont()
+		font.setPointSize(12)
+		self.dateEdit.setFont(font)
 		self.dateEdit.setObjectName("dateEdit")
 		self.dateEdit.setDateTime(QtCore.QDateTime.currentDateTime())
 		font = QtGui.QFont()
 		font.setPointSize(12)
 		self.plainTextEdit = QtWidgets.QPlainTextEdit(self.centralwidget)
-		self.plainTextEdit.setGeometry(QtCore.QRect(130, 240, 261, 31))
+		self.plainTextEdit.setGeometry(QtCore.QRect(130, 285, 360, 34))
 		font = QtGui.QFont()
 		font.setPointSize(12)
 		self.plainTextEdit.setFont(font)
@@ -86,99 +107,96 @@ class Ui_SetConfig(object):
 		font.setPointSize(12)
 		self.label_3.setFont(font)
 		self.label_3.setObjectName("label_3")
+		self.label_b = QtWidgets.QLabel(self.centralwidget)
+		self.label_b.setGeometry(QtCore.QRect(30, 190, 81, 19))
+		font = QtGui.QFont()
+		font.setPointSize(12)
+		self.label_b.setFont(font)
+		self.label_b.setObjectName("label_b")
+		self.plainTextEdit_b = QtWidgets.QPlainTextEdit(self.centralwidget)
+		self.plainTextEdit_b.setGeometry(QtCore.QRect(130, 185, 81, 34))
+		font = QtGui.QFont()
+		font.setPointSize(12)
+		self.plainTextEdit_b.setFont(font)
+		self.plainTextEdit_b.setObjectName("plainTextEdit_b")
 		self.label_4 = QtWidgets.QLabel(self.centralwidget)
-		self.label_4.setGeometry(QtCore.QRect(30, 190, 81, 19))
+		self.label_4.setGeometry(QtCore.QRect(30, 240, 81, 19))
 		font = QtGui.QFont()
 		font.setPointSize(12)
 		self.label_4.setFont(font)
 		self.label_4.setObjectName("label_4")
 		self.label_5 = QtWidgets.QLabel(self.centralwidget)
-		self.label_5.setGeometry(QtCore.QRect(30, 240, 81, 19))
+		self.label_5.setGeometry(QtCore.QRect(30, 290, 81, 19))
 		font = QtGui.QFont()
 		font.setPointSize(12)
 		self.label_5.setFont(font)
 		self.label_5.setObjectName("label_5")
 		self.label_6 = QtWidgets.QLabel(self.centralwidget)
-		self.label_6.setGeometry(QtCore.QRect(30, 290, 81, 19))
+		self.label_6.setGeometry(QtCore.QRect(30, 340, 81, 19))
 		font = QtGui.QFont()
 		font.setPointSize(12)
 		self.label_6.setFont(font)
 		self.label_6.setObjectName("label_6")
 		self.plainTextEdit_2 = QtWidgets.QPlainTextEdit(self.centralwidget)
-		self.plainTextEdit_2.setGeometry(QtCore.QRect(130, 290, 261, 31))
+		self.plainTextEdit_2.setGeometry(QtCore.QRect(130, 335, 360, 34))
 		font = QtGui.QFont()
 		font.setPointSize(12)
 		self.plainTextEdit_2.setFont(font)
 		self.plainTextEdit_2.setObjectName("plainTextEdit_2")
 		self.pushButton = QtWidgets.QPushButton(self.centralwidget)
-		self.pushButton.setGeometry(QtCore.QRect(220, 350, 112, 34))
+		self.pushButton.setGeometry(QtCore.QRect(220, 400, 112, 34))
 		font = QtGui.QFont()
 		font.setPointSize(14)
 		self.pushButton.setFont(font)
 		self.pushButton.setObjectName("pushButton")
-		SetupConfig.setCentralWidget(self.centralwidget)
-		self.menubar = QtWidgets.QMenuBar(SetupConfig)
-		self.menubar.setGeometry(QtCore.QRect(0, 0, 560, 29))
-		self.menubar.setObjectName("menubar")
-		SetupConfig.setMenuBar(self.menubar)
-		self.statusbar = QtWidgets.QStatusBar(SetupConfig)
-		self.statusbar.setObjectName("statusbar")
-		SetupConfig.setStatusBar(self.statusbar)
-
-
+		self.pushButton.clicked.connect(self.btn_next_page)
 
 		SetupConfig.setCentralWidget(self.centralwidget)
-		self.retranslateUi(SetupConfig)
+		self.retranslateUi(SetupConfig, filename)
 		QtCore.QMetaObject.connectSlotsByName(SetupConfig)
 
 
-	def retranslateUi(self, SetupConfig):
-		global ini_file
+	def retranslateUi(self, SetupConfig, filename):
 		_translate = QtCore.QCoreApplication.translate
 		SetupConfig.setWindowTitle(_translate("SetupConfig", "SetupConfig"))
-		# self.label_1.setText(_translate("SetupConfig", "Step 0 : Make sure "))
-		# self.btn_ConfigFile.setText(_translate("SetupConfig", "Select"))
-		# self.btn_pop_window.setText(_translate("SetupConfig", "Start"))
 
 		self.label.setText(_translate("SetupConfig", "Select .ini"))
+		self.textBrowser.setText(_translate("SetupConfig", f"{filename}"))
+		self.spinBox.setValue(int(config['CommonData']['ver_major']))
+		self.spinBox_2.setValue(int(config['CommonData']['ver_minor']))
+		self.spinBox_3.setValue(int(config['CommonData']['ver_main']))
 		self.comboBox.setCurrentText(_translate("SetupConfig", "X-rev"))
 		self.comboBox.setItemText(0, _translate("SetupConfig", "X-rev"))
 		self.comboBox.setItemText(1, _translate("SetupConfig", "A-can"))
-		self.plainTextEdit.setPlainText(_translate("SetupConfig", "stg/atlas/14gmlk_junfy22"))
 		self.label_2.setText(_translate("SetupConfig", "Date"))
 		self.label_3.setText(_translate("SetupConfig", "Version"))
+		self.label_b.setText(_translate("SetupConfig", "Block"))
 		self.label_4.setText(_translate("SetupConfig", "Revision"))
 		self.label_5.setText(_translate("SetupConfig", "Branch"))
 		self.label_6.setText(_translate("SetupConfig", "Repo"))
-		# self.plainTextEdit_2.setPlainText(_translate("SetupConfig", "D:/BEA/BIOS_release/"))
-		print(ini_file)
-		self.plainTextEdit_2.setPlainText(_translate("SetupConfig", f"{ini_file}"))
+		self.plainTextEdit.setPlainText(_translate("SetupConfig", f"{config['CommonData']['working_branch']}"))
+		self.plainTextEdit_2.setPlainText(_translate("SetupConfig", f"{config['CommonData']['repo_dell']}"))
+		self.plainTextEdit_b.setPlainText(_translate("SetupConfig", f"{config['CommonData']['block']}"))
 		self.pushButton.setText(_translate("SetupConfig", "Start"))
+
 
 	def openWindow(self):
 		self.window = QtWidgets.QMainWindow()
-		self.ui = Ui_SetConfig()
+		self.ui = Ui_MainWindow(self.filename)
 		self.ui.setupUi(self.window)
 		self.window.show()
 
-	def getConfigFile(self):
-		filename, _ = QtWidgets.QFileDialog.getOpenFileName(None, 'Open config file' '', "*.ini")
-		print(filename)
-		self.setupUi.label_1.setText(_translate("SetupConfig", f"{filename}"))
-
-
-	def Btn_ConfigFile(self):
-		self.getConfigFile()
-
-	def show_popup(self):
+	def btn_next_page(self):
+		self.writeSetConfig(self.filename)
 		self.openWindow()
+		# SetupConfig.close()
 
 
 if __name__ == "__main__":
 	import sys
 	app = QtWidgets.QApplication(sys.argv)
 	SetupConfig = QtWidgets.QMainWindow()
-	ui = Ui_SetConfig()
+	ui = Ui_SetConfig(self.filename)
 	ui.setupUi(SetupConfig)
 	SetupConfig.show()
 	sys.exit(app.exec_())

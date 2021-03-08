@@ -6,6 +6,7 @@ import git, pysvn
 import configparser
 from colorama import init, Fore, Back, Style
 from SetConfig import *
+from ConstAndInit import *
 init()
 os.system('cls')
 
@@ -23,7 +24,7 @@ os.system('cls')
 
 
 config = configparser.ConfigParser()
-config_file = f'{sys.argv[1]}'
+# config_file = f'{sys.argv[1]}'
 
 # print(os.getcwd() + "\\" + config_file)
 # if os.path.isfile(f'./{config_file}'):
@@ -66,50 +67,50 @@ config_file = f'{sys.argv[1]}'
 # read_RN        = {}
 
 
-# [RN]
-find_Version        = 'Version:      '
-find_System         = 'System:       '
-find_Release_Date   = 'Release Date: '
-find_Release_By     = 'Released By:  '
-find_SWB            = 'SWB#:         '
-find_AEP_Driver     = 'AEP Driver'
-find_Important_Note = 'Important Note:'
-find_Known_Issues   = 'Known Issues:'
-find_DebugMenu      = 'Debug Menu is '
-find_CHANGES        = 'CHANGES:'
-find_ABP            = 'All Points Bulletin (APB)'
+# # [RN]
+# find_Version        = 'Version:      '
+# find_System         = 'System:       '
+# find_Release_Date   = 'Release Date: '
+# find_Release_By     = 'Released By:  '
+# find_SWB            = 'SWB#:         '
+# find_AEP_Driver     = 'AEP Driver'
+# find_Important_Note = 'Important Note:'
+# find_Known_Issues   = 'Known Issues:'
+# find_DebugMenu      = 'Debug Menu is '
+# find_CHANGES        = 'CHANGES:'
+# find_ABP            = 'All Points Bulletin (APB)'
 
-#
-# [DellBiosVersion.h]
-#
-Str_DellBiosVersion = 'DellBiosVersion.h'
-find_Major_ver      = '#define DELL_BIOS_MAJOR_VERSION       '
-find_Minor_ver      = '#define DELL_BIOS_MINOR_VERSION       '
-find_Main_ver       = '#define DELL_BIOS_MAIN_VERSION        '
-find_Build_Month    = '#define DELL_BIOS_BUILD_MONTH         '
-find_Build_Day      = '#define DELL_BIOS_BUILD_DAY           '
-find_Build_Year     = '#define DELL_BIOS_BUILD_YEAR          '
+# #
+# # [DellBiosVersion.h]
+# #
+# Str_DellBiosVersion = 'DellBiosVersion.h'
+# find_Major_ver      = '#define DELL_BIOS_MAJOR_VERSION       '
+# find_Minor_ver      = '#define DELL_BIOS_MINOR_VERSION       '
+# find_Main_ver       = '#define DELL_BIOS_MAIN_VERSION        '
+# find_Build_Month    = '#define DELL_BIOS_BUILD_MONTH         '
+# find_Build_Day      = '#define DELL_BIOS_BUILD_DAY           '
+# find_Build_Year     = '#define DELL_BIOS_BUILD_YEAR          '
 
-#
-# [PlatformConfig.txt]
-#
-Str_PlatformConfig  = 'PlatformConfig.txt'
-find_DebugMenu_PC   = 'DEFINE DEBUG_MENU_ENABLE                     = '
-DebugMenuONOFF = ''
+# #
+# # [PlatformConfig.txt]
+# #
+# Str_PlatformConfig  = 'PlatformConfig.txt'
+# find_DebugMenu_PC   = 'DEFINE DEBUG_MENU_ENABLE                     = '
+# DebugMenuONOFF = ''
 
-#
-# Keywords for get/set code change
-#
-RN_list_keywords = [find_Version, find_System, find_Release_Date, find_Release_By, find_SWB, find_AEP_Driver, find_Important_Note, find_Known_Issues, find_DebugMenu, find_CHANGES, find_ABP]
-BV_list_keywords = [find_Major_ver, find_Minor_ver, find_Main_ver, find_Build_Month, find_Build_Day, find_Build_Year]
-DM_list_keywords = find_DebugMenu_PC
+# #
+# # Keywords for get/set code change
+# #
+# RN_list_keywords = [find_Version, find_System, find_Release_Date, find_Release_By, find_SWB, find_AEP_Driver, find_Important_Note, find_Known_Issues, find_DebugMenu, find_CHANGES, find_ABP]
+# BV_list_keywords = [find_Major_ver, find_Minor_ver, find_Main_ver, find_Build_Month, find_Build_Day, find_Build_Year]
+# DM_list_keywords = find_DebugMenu_PC
 
-#
-# [mail]
-#
-DUP_Available_string    = 'DUPs are available on Agile.'
-DUP_NOT_Avaiable_string = 'DUPs are NOT available on Agile.'
-DUP_text = ''
+# #
+# # [mail]
+# #
+# DUP_Available_string    = 'DUPs are available on Agile.'
+# DUP_NOT_Avaiable_string = 'DUPs are NOT available on Agile.'
+# DUP_text = ''
 
 #  === === === === ===  == == == ==  === === === === ===  #
 #  === === === === ===  == == == ==  === === === === ===  #
@@ -123,13 +124,14 @@ class File_Data():
 		self.row = row
 
 class Functions:
-	def read_config(self, config_file):
-		if os.path.isfile(f'./{config_file}'):
-			config.read(config_file)
+	def read_config(self, filepath):
+		filename = filepath.rsplit('/', 1)[-1]
+		if os.path.isfile(f'{filename}'):
+			config.read(filepath)
 		else:
-			print(f"{config_file} file is not exist.")
+			print(f"{filename} file is not exist.")
 			exit(1)
-		print(Fore.GREEN + f"[O] Read configuartion from '{config_file}'. Please double check configuration is correct." + Style.RESET_ALL)
+		print(Fore.GREEN + f"[O] Read configuartion from '{filepath}'. Please double check configuration is correct." + Style.RESET_ALL)
 
 		for i in config.sections():
 			INI.append(dict(config.items(i)))
@@ -175,6 +177,7 @@ class Functions:
 			print(Fore.GREEN + f"[O] Find repo : {repo}" + Style.RESET_ALL)
 		else:
 			print(Fore.RED + '[X] Did not find repo' + Style.RESET_ALL)
+			exit(1)
 
 		try:
 			repo.git.checkout(f"{INI[0]['working_branch']}")
@@ -803,10 +806,15 @@ SWB# : {P[platform]['swb']}\n{DUP_text}\n\n"
 # Step 1 : Fetch RN, git repo, and create code change
 #
 
-f = Functions()
-f.read_config(config_file)
-f.Prepare_for_repo()
-repo = git.Repo(INI[0]['repo_dell'])
+# f = Functions()
+# f.read_config(config_file)
+# f.Prepare_for_repo()
+# repo = git.Repo(INI[0]['repo_dell'])
+
+#
+#
+#
+
 # RN_obj = f.create_RN(Leading_V_RN_File_Name, RN_list_keywords)
 # f.edit_BV(BV_list_keywords)
 # f.edit_PC(DM_list_keywords)

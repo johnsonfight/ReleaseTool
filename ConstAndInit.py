@@ -1,6 +1,3 @@
-#
-# Non-fixed Const
-#
 IGNORE_LIST  = ['Spitzer']
 CONVERT_DICT = {"Pathfinder":"Skyline", "Sojourner":"Skyline", "Shoemaker":"Ulysses"}
 
@@ -17,8 +14,9 @@ repo           = None
 t_drive_folder = {}
 read_RN        = {}
 
-
+#
 # [RN]
+#
 find_Version        = 'Version:      '
 find_System         = 'System:       '
 find_Release_Date   = 'Release Date: '
@@ -62,8 +60,3 @@ DM_list_keywords = find_DebugMenu_PC
 DUP_Available_string    = 'DUPs are available on Agile.'
 DUP_NOT_Avaiable_string = 'DUPs are NOT available on Agile.'
 DUP_text = ''
-
-#
-#
-#
-ini_file = ""

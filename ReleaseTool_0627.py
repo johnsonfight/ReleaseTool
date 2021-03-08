@@ -6,7 +6,12 @@ from releaseToolMain import *
 from BuildSelection import Ui_PlatformSelection
 
 class Ui_MainWindow(object):
-    f = Functions()
+    def __init__(self, filename):
+        f = Functions()
+        f.read_config(filename)
+        f.Prepare_for_repo()
+        repo = git.Repo(INI[0]['repo_dell'])
+
 
     def Run_Button1(self):
         # if self.CB_scanCPI.isChecked():
