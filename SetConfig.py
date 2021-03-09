@@ -9,6 +9,7 @@ config = configparser.ConfigParser()
 class Ui_SetConfig(object):
 	def __init__(self, file_name):
 		self.filename = file_name
+		# self.window = QtWidgets.QMainWindow()
 
 
 	def read_config(self, config_file):
@@ -188,8 +189,9 @@ class Ui_SetConfig(object):
 
 	def btn_next_page(self):
 		self.writeSetConfig(self.filename)
+		# obj_SetConfig.close()
+		# print("close")
 		self.openWindow()
-		# SetupConfig.close()
 
 
 if __name__ == "__main__":
